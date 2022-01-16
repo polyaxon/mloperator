@@ -45,7 +45,7 @@ func (r *OperationReconciler) reconcileServiceOp(ctx context.Context, instance *
 	}
 
 	// Reconcile the underlaying service
-	if err := r.reconcileBaseService(ctx, instance, ports); err != nil {
+	if err := r.reconcileBaseService(ctx, instance, ports, instance.ServiceSpec.IsExternal); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -172,10 +172,14 @@ func (r *OperationReconciler) reconcileDeploymentStatus(instance *operationv1.Op
 	return false
 }
 
-func (r *OperationReconciler) reconcileBaseService(ctx context.Context, instance *operationv1.Operation, ports []int32) error {
+func (r *OperationReconciler) reconcileBaseService(ctx context.Context, instance *operationv1.Operation, ports []int32, isExternal bool) error {
 	log := r.Log
 
-	service := managers.GenerateService(instance.Name, instance.Namespace, instance.Labels, instance.Annotations, ports)
+	name := instance.Name
+	if isExternal {
+		name += "-ext"
+	}
+	service := managers.GenerateService(name, instance.Namespace, instance.Labels, instance.Annotations, ports)
 	if err := ctrl.SetControllerReference(instance, service, r.Scheme); err != nil {
 		log.V(1).Info("generateService Error")
 		return err

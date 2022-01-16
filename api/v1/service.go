@@ -29,10 +29,14 @@ type ServiceSpec struct {
 	// +optional
 	Replicas *int32 `json:"replicas,omitempty" default:"1" protobuf:"varint,1,opt,name=replicas"`
 
-	// optional
 	// List of ports to expose on the service
+	// +optional
 	Ports []int32 `json:"ports,omitempty" protobuf:"varint,2,rep,name=ports"`
 
+	// Is external service
+	// +optional
+	IsExternal bool `json:"isExternal,omitempty" protobuf:"varint,3,rep,name=IsExternal"`
+
 	// Template describes the pods that will be created.
-	Template corev1.PodTemplateSpec `json:"template" protobuf:"bytes,3,opt,name=template"`
+	Template corev1.PodTemplateSpec `json:"template" protobuf:"bytes,4,opt,name=template"`
 }

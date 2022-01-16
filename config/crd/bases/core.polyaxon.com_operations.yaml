@@ -28937,8 +28937,11 @@ spec:
           serviceSpec:
             description: Specification of the desired behavior of a Service.
             properties:
+              isExternal:
+                description: Is external service
+                type: boolean
               ports:
-                description: optional List of ports to expose on the service
+                description: List of ports to expose on the service
                 items:
                   format: int32
                   type: integer
