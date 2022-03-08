@@ -121,7 +121,7 @@ func (r *OperationReconciler) reconcileJobStatus(instance *operationv1.Operation
 	}
 
 	if len(job.Status.Conditions) == 0 {
-		if job.Status.Failed > 0 {
+		if job.Status.Failed > 0 && job.Status.Active == 0 {
 			if updated := instance.LogWarning("", ""); updated {
 				log.V(1).Info("Job Logging Status Warning")
 				return true
