@@ -8,7 +8,7 @@
 <br>
 <p align="center">
   <p align="center">
-    <img src="https://raw.githubusercontent.com/polyaxon/mloperator/master/artifacts/default-monochrome.svg" alt="mloperator" height="100">
+    <img src="https://raw.githubusercontent.com/polyaxon/mloperator/master/artifacts/default-monochrome.svg" alt="mloperator" height="200">
   </p>
 </p>
 <br>
