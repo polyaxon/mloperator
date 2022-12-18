@@ -592,8 +592,8 @@ github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINE
 github.com/pkg/sftp v1.10.1/go.mod h1:lYOWFsE0bwd1+KfKJaKeuokY15vzFx25BLbzYYoAxZI=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/polyaxon/sdks v0.0.0-20220308002020-eaeaaf7c702d h1:Aics4Ll6eoUD2DqsTLhOT1q0Zp4OwjlEoIh5QZEqylE=
-github.com/polyaxon/sdks v0.0.0-20220308002020-eaeaaf7c702d/go.mod h1:1eT8Tn6mQh+oI5jKY2Pg353f0Xrxsxuap5fkoOfcDzo=
+github.com/polyaxon/sdks v0.0.0-20221219160916-f21acf81f015 h1:LScw+ngGELtr2tnahJwgJlbfYxohTbO5VeyZDNow/8I=
+github.com/polyaxon/sdks v0.0.0-20221219160916-f21acf81f015/go.mod h1:1eT8Tn6mQh+oI5jKY2Pg353f0Xrxsxuap5fkoOfcDzo=
 github.com/posener/complete v1.1.1/go.mod h1:em0nMJCgc9GFtwrmVmEMR/ZL6WyhyjMBndrE9hABlRI=
 github.com/posener/complete v1.2.3/go.mod h1:WZIdtGGp+qx0sLrYKtIRAruyNpv6hFCicSgv7Sy7s/s=
 github.com/pquerna/cachecontrol v0.0.0-20171018203845-0dec1b30a021/go.mod h1:prYjPmNq4d1NPVmpShWobRqXY3q7Vp+80DqgxxUrUIA=

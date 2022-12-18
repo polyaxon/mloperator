@@ -5,7 +5,13 @@
 [![GitHub](https://img.shields.io/badge/issue_tracker-github-blue?logo=github)](https://github.com/polyaxon/polyaxon/issues)
 [![GitHub](https://img.shields.io/badge/roadmap-github-blue?logo=github)](https://github.com/polyaxon/polyaxon/milestones)
 
-<a href="https://polyaxon.com"><img src="https://raw.githubusercontent.com/polyaxon/polyaxon/master/artifacts/packages/mloperator.svg" width="125" height="125" align="right" /></a>
+<br>
+<p align="center">
+  <p align="center">
+    <img src="https://raw.githubusercontent.com/polyaxon/polyaxon/master/artifacts/packages/mloperator.svg" alt="mloperator" height="100">
+  </p>
+</p>
+<br>
 
 # Machine Learning Operator & Controller for Kubernetes
 
