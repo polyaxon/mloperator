@@ -41,6 +41,9 @@ const (
 	// PolyaxonAuthToken polyaxon auth token
 	PolyaxonAuthToken = "POLYAXON_AUTH_TOKEN"
 
+	// PolyaxonInternalToken polyaxon internal token
+	PolyaxonInternalToken = "POLYAXON_SECRET_INTERNAL_TOKEN"
+
 	// PolyaxonAPIHost polyaxon api host
 	PolyaxonAPIHost = "POLYAXON_PROXY_API_HOST"
 
@@ -54,13 +57,20 @@ const (
 	PolyaxonStreamsPort = "POLYAXON_PROXY_STREAMS_PORT"
 )
 
+func polyaxonService(name string) string {
+    if name == "InternalToken" {
+        return "X-POLYAXON-INTERNAL"
+    }
+	return "X-POLYAXON-SERVICE"
+}
+
 func polyaxonAuth(name, value string) httpRuntime.ClientAuthInfoWriter {
 	return httpRuntime.ClientAuthInfoWriterFunc(func(r httpRuntime.ClientRequest, _ strfmt.Registry) error {
 		err := r.SetHeaderParam("Authorization", name+" "+value)
 		if err != nil {
 			return err
 		}
-		return r.SetHeaderParam("X-POLYAXON-SERVICE", "operator")
+		return r.SetHeaderParam(polyaxonService(name), "operator")
 	})
 }
 
@@ -154,11 +164,11 @@ func LogPolyaxonRunStatus(owner, project, uuid string, statusCond operationv1.Op
 
 // CollectPolyaxonRunLogs archives logs before removing the operation
 func CollectPolyaxonRunLogs(namespace, owner, project, uuid string, kind string, log logr.Logger) error {
-	token := config.GetStrEnv(PolyaxonAuthToken, "")
+	token := config.GetStrEnv(PolyaxonInternalToken, "")
 	host := polyaxonHost(config.GetStrEnv(PolyaxonStreamsHost, "localhost"), config.GetIntEnv(PolyaxonStreamsPort, 8000))
 
 	plxClient := polyaxonSDK.New(httptransport.New(host, "", []string{"http"}), strfmt.Default)
-	plxToken := polyaxonAuth("Token", token)
+	plxToken := polyaxonAuth("InternalToken", token)
 
 	ctx, cancel := netContext.WithTimeout(netContext.Background(), apiServerDefaultTimeout)
 	defer cancel()
