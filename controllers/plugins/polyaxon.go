@@ -58,9 +58,9 @@ const (
 )
 
 func polyaxonService(name string) string {
-    if name == "InternalToken" {
-        return "X-POLYAXON-INTERNAL"
-    }
+	if name == "InternalToken" {
+		return "X-POLYAXON-INTERNAL"
+	}
 	return "X-POLYAXON-SERVICE"
 }
 
