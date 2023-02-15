@@ -1,13 +1,12 @@
 apiVersion: core.polyaxon.com/v1
 kind: Operation
 metadata:
+  labels:
+    app.kubernetes.io/name: operation
+    app.kubernetes.io/instance: operation-sample
+    app.kubernetes.io/part-of: mloperator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: mloperator
   name: operation-sample
-batchJobSpec:
-  termination:
-    ttlSecondsAfterFinished: 5
-  template:
-    spec:
-      containers:
-        - name: op-sample
-          image: python:3
-          command: ["echo foo"]
+spec:
+  # TODO(user): Add fields here
