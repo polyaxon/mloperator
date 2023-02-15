@@ -10,7 +10,7 @@ require (
 	github.com/onsi/gomega v1.15.0
 	github.com/pkg/errors v0.9.1
 	github.com/polyaxon/sdks v0.0.0-20221219160916-f21acf81f015
-	github.com/prometheus/client_golang v1.11.0
+	github.com/prometheus/client_golang v1.11.1
 	golang.org/x/net v0.0.0-20211123203042-d83791d6bcd9
 	k8s.io/api v0.22.1
 	k8s.io/apimachinery v0.22.1
