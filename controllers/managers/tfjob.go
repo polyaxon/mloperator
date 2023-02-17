@@ -56,7 +56,8 @@ func GenerateTFJob(
 			CleanPodPolicy:          spec.CleanPodPolicy,
 			SchedulingPolicy:        spec.SchedulingPolicy,
 		},
-		TFReplicaSpecs: replicaSpecs,
+		EnableDynamicWorker: spec.EnableDynamicWorker,
+		TFReplicaSpecs:      replicaSpecs,
 	}
 
 	job := &unstructured.Unstructured{}

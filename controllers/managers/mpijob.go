@@ -25,6 +25,7 @@ import (
 	operationv1 "github.com/polyaxon/mloperator/api/v1"
 	"github.com/polyaxon/mloperator/controllers/kfapi"
 	"github.com/polyaxon/mloperator/controllers/kinds"
+	"github.com/polyaxon/mloperator/controllers/utils"
 )
 
 // GenerateMPIJob returns a MPIJob
@@ -56,10 +57,8 @@ func GenerateMPIJob(
 			CleanPodPolicy:          spec.CleanPodPolicy,
 			SchedulingPolicy:        spec.SchedulingPolicy,
 		},
-		SlotsPerWorker: spec.SlotsPerWorker,
-		// TODO: Re-enable in v2
-		// MPIImplementation: spec.Implementation,
-		// SSHAuthMountPath:  spec.SSHAuthMountPath,
+		SlotsPerWorker:  spec.SlotsPerWorker,
+		MainContainer:   utils.MainJobContainer,
 		MPIReplicaSpecs: replicaSpecs,
 	}
 

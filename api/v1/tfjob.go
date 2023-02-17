@@ -27,13 +27,16 @@ type TFJobSpec struct {
 	// +optional
 	SchedulingPolicy *SchedulingPolicy `json:"schedulingPolicy,omitempty"  protobuf:"bytes,2,opt,name=schedulingPolicy"`
 
+	// A switch to enable dynamic worker
+	EnableDynamicWorker bool `json:"enableDynamicWorker,omitempty" protobuf:"bytes,3,opt,name=enableDynamicWorker"`
+
 	// A map of ReplicaType (type) to ReplicaSpec (value). Specifies the TF cluster configuration.
 	// For example,
 	//   {
 	//     "PS": ReplicaSpec,
 	//     "Worker": ReplicaSpec,
 	//   }
-	ReplicaSpecs map[TFReplicaType]KFReplicaSpec `json:"replicaSpecs" protobuf:"bytes,3,opt,name=replicaSpecs"`
+	ReplicaSpecs map[TFReplicaType]KFReplicaSpec `json:"replicaSpecs" protobuf:"bytes,4,opt,name=replicaSpecs"`
 }
 
 // TFReplicaType is the type for TFReplica. Can be one of: "Chief"/"Master" (semantically equivalent),

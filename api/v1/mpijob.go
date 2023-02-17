@@ -32,14 +32,6 @@ type MPIJobSpec struct {
 	// Defaults to None.
 	SlotsPerWorker *int32 `json:"slotsPerWorker,omitempty" protobuf:"bytes,3,opt,name=slotsPerWorker"`
 
-	// SSHAuthMountPath is the directory where SSH keys are mounted.
-	// Defaults to "/root/.ssh".
-	SSHAuthMountPath string `json:"sshAuthMountPath,omitempty" protobuf:"bytes,4,opt,name=sshAuthMountPath"`
-
-	// MPIImplementation is the MPI implementation.
-	// Options are "OpenMPI" (default) and "Intel".
-	Implementation MPIImplementation `json:"mpiImplementation,omitempty" protobuf:"bytes,5,opt,name=implementation"`
-
 	// `MPIReplicaSpecs` contains maps from `MPIReplicaType` to `ReplicaSpec` that
 	// specify the MPI replicas to run.
 	ReplicaSpecs map[MPIReplicaType]KFReplicaSpec `json:"replicaSpecs" protobuf:"bytes,6,opt,name=replicaSpecs"`
@@ -54,11 +46,4 @@ const (
 
 	// MPIReplicaTypeWorker is the type for worker replicas.
 	MPIReplicaTypeWorker MPIReplicaType = "Worker"
-)
-
-type MPIImplementation string
-
-const (
-	MPIImplementationOpenMPI MPIImplementation = "OpenMPI"
-	MPIImplementationIntel   MPIImplementation = "Intel"
 )
