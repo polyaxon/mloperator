@@ -27,7 +27,7 @@ type XGBoostJobSpec struct {
 	// +optional
 	SchedulingPolicy *SchedulingPolicy `json:"schedulingPolicy,omitempty"  protobuf:"bytes,2,opt,name=schedulingPolicy"`
 
-	// A map of ReplicaType (type) to ReplicaSpec (value). Specifies the PyTorch cluster configuration.
+	// A map of ReplicaType (type) to ReplicaSpec (value). Specifies the XGBoost cluster configuration.
 	// For example,
 	//   {
 	//     "Master": ReplicaSpec,

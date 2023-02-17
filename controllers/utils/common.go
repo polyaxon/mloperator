@@ -31,3 +31,6 @@ func IgnoreNotFound(err error) error {
 	}
 	return err
 }
+
+/* Polyaxon's default main container name */
+const MainJobContainer = "polyaxon-main"

@@ -37,6 +37,9 @@ const (
 	// PytorchJobEnabled is a flag to enable PytorchJob conroller
 	PytorchJobEnabled = "POLYAXON_PYTORCH_JOB_ENABLED"
 
+	// PaddleJobEnabled is a flag to enable PaddleJob conroller
+	PaddleJobEnabled = "POLYAXON_PADDLE_JOB_ENABLED"
+
 	// MPIJobEnabled is a flag to enable MPIJob conroller
 	MPIJobEnabled = "POLYAXON_MPIJOB_ENABLED"
 

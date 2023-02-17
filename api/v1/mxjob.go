@@ -41,7 +41,7 @@ type MXJobSpec struct {
 	ReplicaSpecs map[MXReplicaType]KFReplicaSpec `json:"replicaSpecs" protobuf:"bytes,4,opt,name=replicaSpecs"`
 }
 
-// MXReplicaType is the type for PyTorchReplica. Can be one of "Master" or "Worker".
+// MXReplicaType is the type for MXReplica. Can be one of "Master" or "Worker".
 type MXReplicaType string
 
 const (

@@ -65,6 +65,8 @@ type OperationReconciler struct {
 // +kubebuilder:rbac:groups=kubeflow.org,resources=xgboostjobs/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=kubeflow.org,resources=mpijobs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=kubeflow.org,resources=mpijobs/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=kubeflow.org,resources=paddlejobs,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=kubeflow.org,resources=paddlejobs/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=networking.istio.io,resources=virtualservices,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=networking.istio.io,resources=virtualservices/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=networking.istio.io,resources=destinationrules,verbs=get;list;watch;create;update;patch;delete
@@ -116,6 +118,8 @@ func (r *OperationReconciler) reconcileOperation(ctx context.Context, instance *
 		return r.reconcileTFJobOp(ctx, instance)
 	} else if instance.PytorchJobSpec != nil {
 		return r.reconcilePytorchJobOp(ctx, instance)
+	} else if instance.PaddleJobSpec != nil {
+		return r.reconcilePaddleJobOp(ctx, instance)
 	} else if instance.MXJobSpec != nil {
 		return r.reconcileMXJobOp(ctx, instance)
 	} else if instance.XGBoostJobSpec != nil {
@@ -135,6 +139,8 @@ func (r *OperationReconciler) cleanUpOperation(ctx context.Context, instance *op
 		return r.cleanUpTFJob(ctx, instance)
 	} else if instance.PytorchJobSpec != nil {
 		return r.cleanUpPytorchJob(ctx, instance)
+	} else if instance.PaddleJobSpec != nil {
+		return r.cleanUpPaddleJob(ctx, instance)
 	} else if instance.MXJobSpec != nil {
 		return r.cleanUpMXJob(ctx, instance)
 	} else if instance.XGBoostJobSpec != nil {
@@ -167,6 +173,12 @@ func (r *OperationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		pytorchJob.SetAPIVersion(kinds.KFAPIVersion)
 		pytorchJob.SetKind(kinds.PytorchJobKind)
 		controllerManager.Owns(pytorchJob)
+	}
+	if config.GetBoolEnv(config.PaddleJobEnabled, false) {
+		paddleJob := &unstructured.Unstructured{}
+		paddleJob.SetAPIVersion(kinds.KFAPIVersion)
+		paddleJob.SetKind(kinds.PaddleJobKind)
+		controllerManager.Owns(paddleJob)
 	}
 	if config.GetBoolEnv(config.MPIJobEnabled, false) {
 		mpiJob := &unstructured.Unstructured{}

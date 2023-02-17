@@ -32,6 +32,9 @@ const (
 	// MXJobKind kind
 	MXJobKind = "MXJob"
 
+	// PaddleJobKind kind
+	PaddleJobKind = "PaddleJob"
+
 	// XGBoostJobKind tfjob kind
 	XGBoostJobKind = "XGBoostJob"
 

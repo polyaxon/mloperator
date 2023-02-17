@@ -138,11 +138,10 @@ type RunPolicy struct {
 
 // MPIJobSpec resource definiton.
 type MPIJobSpec struct {
-	SlotsPerWorker    *int32                                                    `json:"slotsPerWorker,omitempty"`
-	RunPolicy         RunPolicy                                                 `json:"runPolicy,omitempty"`
-	SSHAuthMountPath  string                                                    `json:"sshAuthMountPath,omitempty"`
-	MPIImplementation operationv1.MPIImplementation                             `json:"mpiImplementation,omitempty"`
-	MPIReplicaSpecs   map[operationv1.MPIReplicaType]*operationv1.KFReplicaSpec `json:"mpiReplicaSpecs"`
+	SlotsPerWorker  *int32                                                    `json:"slotsPerWorker,omitempty"`
+	RunPolicy       RunPolicy                                                 `json:"runPolicy,omitempty"`
+	MainContainer   string                                                    `json:"mainContainer,omitempty"`
+	MPIReplicaSpecs map[operationv1.MPIReplicaType]*operationv1.KFReplicaSpec `json:"mpiReplicaSpecs"`
 }
 
 // PyTorchJobSpec is a desired state description of the PyTorchJob.
@@ -151,10 +150,17 @@ type PyTorchJobSpec struct {
 	PyTorchReplicaSpecs map[operationv1.PyTorchReplicaType]*operationv1.KFReplicaSpec `json:"pytorchReplicaSpecs"`
 }
 
+// PaddleJobSpec is a desired state description of the TFJob.
+type PaddleJobSpec struct {
+	RunPolicy          RunPolicy                                                    `json:"runPolicy,omitempty"`
+	PaddleReplicaSpecs map[operationv1.PaddleReplicaType]*operationv1.KFReplicaSpec `json:"paddleReplicaSpecs"`
+}
+
 // TFJobSpec is a desired state description of the TFJob.
 type TFJobSpec struct {
-	RunPolicy      RunPolicy                                                `json:"runPolicy,omitempty"`
-	TFReplicaSpecs map[operationv1.TFReplicaType]*operationv1.KFReplicaSpec `json:"tfReplicaSpecs"`
+	RunPolicy           RunPolicy                                                `json:"runPolicy,omitempty"`
+	EnableDynamicWorker bool                                                     `json:"enableDynamicWorker,omitempty"`
+	TFReplicaSpecs      map[operationv1.TFReplicaType]*operationv1.KFReplicaSpec `json:"tfReplicaSpecs"`
 }
 
 // MXJobSpec is a desired state description of the MXNetJob.
