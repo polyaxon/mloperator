@@ -195,3 +195,37 @@ func CollectPolyaxonRunLogs(namespace, owner, project, uuid string, kind string,
 	}
 	return err
 }
+
+// DeprecatedCollectPolyaxonRunLogs archives logs before removing the operation
+func DeprecatedCollectPolyaxonRunLogs(namespace, owner, project, uuid string, kind string, log logr.Logger) error {
+	token := config.GetStrEnv(PolyaxonInternalToken, "")
+	host := polyaxonHost(config.GetStrEnv(PolyaxonStreamsHost, "localhost"), config.GetIntEnv(PolyaxonStreamsPort, 8000))
+
+	plxClient := polyaxonSDK.New(httptransport.New(host, "", []string{"http"}), strfmt.Default)
+	plxToken := polyaxonAuth("Token", token)
+
+	ctx, cancel := netContext.WithTimeout(netContext.Background(), apiServerDefaultTimeout)
+	defer cancel()
+
+	params := &runs_v1.DeprecatedCollectRunLogsParams{
+		Namespace: namespace,
+		Owner:     owner,
+		Project:   project,
+		UUID:      uuid,
+		Kind:      kind,
+		Context:   ctx,
+	}
+	_, _, err := plxClient.RunsV1.DeprecatedCollectRunLogs(params, plxToken)
+	if _, notFound := err.(*runs_v1.DeprecatedCollectRunLogsNotFound); notFound {
+		log.Info("Operation collect logs; instance not found", "Project", project, "Instance", uuid, "kind", kind)
+		return nil
+	}
+	if _, forbidden := err.(*runs_v1.DeprecatedCollectRunLogsForbidden); forbidden {
+		log.Info("Operation collect logs; forbidden", "Project", project, "Instance", uuid, "kind", kind)
+		return nil
+	}
+	if _, errorContent := err.(*runs_v1.DeprecatedCollectRunLogsDefault); errorContent {
+		log.Info("Operation collect logs", "Error", errorContent, "Project", project, "Instance", uuid, "kind", kind)
+	}
+	return err
+}

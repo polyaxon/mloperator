@@ -117,5 +117,5 @@ func (r *OperationReconciler) reconcilePytorchJobStatus(instance *operationv1.Op
 }
 
 func (r *OperationReconciler) cleanUpPytorchJob(ctx context.Context, instance *operationv1.Operation) (ctrl.Result, error) {
-	return ctrl.Result{}, nil
+	return r.handleTTL(ctx, instance)
 }

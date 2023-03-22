@@ -117,5 +117,5 @@ func (r *OperationReconciler) reconcileMXJobStatus(instance *operationv1.Operati
 }
 
 func (r *OperationReconciler) cleanUpMXJob(ctx context.Context, instance *operationv1.Operation) (ctrl.Result, error) {
-	return ctrl.Result{}, nil
+	return r.handleTTL(ctx, instance)
 }

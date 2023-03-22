@@ -116,5 +116,5 @@ func (r *OperationReconciler) reconcileTFJobStatus(instance *operationv1.Operati
 }
 
 func (r *OperationReconciler) cleanUpTFJob(ctx context.Context, instance *operationv1.Operation) (ctrl.Result, error) {
-	return ctrl.Result{}, nil
+	return r.handleTTL(ctx, instance)
 }

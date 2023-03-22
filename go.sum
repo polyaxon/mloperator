@@ -301,6 +301,10 @@ github.com/polyaxon/sdks v1.21.1-0.20230217150110-5fc37d5c0265 h1:UQMD6E79aNiv55
 github.com/polyaxon/sdks v1.21.1-0.20230217150110-5fc37d5c0265/go.mod h1:1eT8Tn6mQh+oI5jKY2Pg353f0Xrxsxuap5fkoOfcDzo=
 github.com/polyaxon/sdks v1.21.1-0.20230217210816-c100e6df38e6 h1:p/0YoLer4uB5zCHRX7WFk2FHL7Yau41GZ6ZhtuWu9k4=
 github.com/polyaxon/sdks v1.21.1-0.20230217210816-c100e6df38e6/go.mod h1:1eT8Tn6mQh+oI5jKY2Pg353f0Xrxsxuap5fkoOfcDzo=
+github.com/polyaxon/sdks v1.22.1-0.20230315213824-00d77be249ee h1:oc4V7EGvp4r2yVNWD2WMLOntwBBQtYvcAnz/BYhS44o=
+github.com/polyaxon/sdks v1.22.1-0.20230315213824-00d77be249ee/go.mod h1:1eT8Tn6mQh+oI5jKY2Pg353f0Xrxsxuap5fkoOfcDzo=
+github.com/polyaxon/sdks v1.22.1-0.20230321125240-5296e9e75e5e h1:R7NVzmQYzcmpgDJhHiSD4zO5eOJiJgsux41NJKQqVaM=
+github.com/polyaxon/sdks v1.22.1-0.20230321125240-5296e9e75e5e/go.mod h1:1eT8Tn6mQh+oI5jKY2Pg353f0Xrxsxuap5fkoOfcDzo=
 github.com/prometheus/client_golang v0.9.1/go.mod h1:7SWBe2y4D6OKWSNQJUaRYU/AaXPKyh/dDVn+NZz0KFw=
 github.com/prometheus/client_golang v1.0.0/go.mod h1:db9x61etRT2tGnBNRi70OPL5FsnadC4Ky3P0J6CfImo=
 github.com/prometheus/client_golang v1.7.1/go.mod h1:PY5Wy2awLA44sXw4AOSfFBetzPP4j5+D6mVACh+pe2M=

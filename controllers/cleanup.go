@@ -25,13 +25,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	operationv1 "github.com/polyaxon/mloperator/api/v1"
-)
-
-const (
-	// DefaultBackOff is the max backoff period, exported for the e2e test
-	DefaultBackOff = 10 * time.Second
-	// MaxBackOff is the max backoff period, exported for the e2e test
-	MaxBackOff = 360 * time.Second
+	"github.com/polyaxon/mloperator/controllers/utils"
 )
 
 // delete the operation
@@ -53,7 +47,8 @@ func (r *OperationReconciler) handleTTL(ctx context.Context, instance *operation
 
 	currentTime := time.Now()
 	ttl := instance.Termination.TTLSecondsAfterFinished
-	if ttl == nil {
+	zeroTtl := int32(utils.ZeroTTL)
+	if ttl == nil || ttl == &zeroTtl {
 		// We clean right away
 		return ctrl.Result{}, r.delete(ctx, instance)
 	}
@@ -108,7 +103,7 @@ func (r *OperationReconciler) getBackOff(backOff int32) time.Duration {
 	// The backoff is capped such that 'calculated' value never overflows.
 	delay := float64(1) * math.Pow(2, float64(backOff))
 	if delay > math.MaxInt64 {
-		return MaxBackOff
+		return utils.MaxBackOff
 	}
 	return time.Duration(delay)
 }

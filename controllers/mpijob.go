@@ -116,5 +116,5 @@ func (r *OperationReconciler) reconcileMPIJobStatus(instance *operationv1.Operat
 }
 
 func (r *OperationReconciler) cleanUpMPIJob(ctx context.Context, instance *operationv1.Operation) (ctrl.Result, error) {
-	return ctrl.Result{}, nil
+	return r.handleTTL(ctx, instance)
 }

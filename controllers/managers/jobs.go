@@ -22,13 +22,8 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
 
-const (
-	// DefaultBackoffLimit for Jobs
-	DefaultBackoffLimit = 0
-	// DefaultRestartPolicy for Jobs
-	DefaultRestartPolicy = "Never"
+	"github.com/polyaxon/mloperator/controllers/utils"
 )
 
 // CopyJobFields copies the owned fields from one Job to another
@@ -86,14 +81,8 @@ func GenerateJob(
 	ttlSecondsAfterFinished *int32,
 	podSpec corev1.PodSpec,
 ) *batchv1.Job {
-	jobBackoffLimit := backoffLimit
-	if backoffLimit == nil {
-		defaultBackoffLimit := int32(DefaultBackoffLimit)
-		jobBackoffLimit = &defaultBackoffLimit
-	}
-
 	if podSpec.RestartPolicy == "" {
-		podSpec.RestartPolicy = DefaultRestartPolicy
+		podSpec.RestartPolicy = utils.DefaultRestartPolicy
 	}
 
 	job := &batchv1.Job{
@@ -104,9 +93,9 @@ func GenerateJob(
 			Annotations: annotations,
 		},
 		Spec: batchv1.JobSpec{
-			BackoffLimit:            jobBackoffLimit,
+			BackoffLimit:            utils.GetBackoffLimit(backoffLimit),
 			ActiveDeadlineSeconds:   activeDeadlineSeconds,
-			TTLSecondsAfterFinished: ttlSecondsAfterFinished,
+			TTLSecondsAfterFinished: utils.GetTTL(ttlSecondsAfterFinished),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{}, Annotations: map[string]string{}},
 				Spec:       podSpec,

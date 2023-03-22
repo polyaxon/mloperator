@@ -131,5 +131,5 @@ func (r *OperationReconciler) collectLogs(instance *operationv1.Operation) error
 	}
 
 	log.Info("Operation collect logs", "Instance", instance.GetName(), "kind", runKind)
-	return plugins.CollectPolyaxonRunLogs(instance.Namespace, owner, project, instanceID, runKind, r.Log)
+	return plugins.DeprecatedCollectPolyaxonRunLogs(instance.Namespace, owner, project, instanceID, runKind, r.Log)
 }

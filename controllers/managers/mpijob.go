@@ -52,8 +52,8 @@ func GenerateMPIJob(
 	jobSpec := &kfapi.MPIJobSpec{
 		RunPolicy: kfapi.RunPolicy{
 			ActiveDeadlineSeconds:   termination.ActiveDeadlineSeconds,
-			BackoffLimit:            termination.BackoffLimit,
-			TTLSecondsAfterFinished: termination.TTLSecondsAfterFinished,
+			BackoffLimit:            utils.GetBackoffLimit(termination.BackoffLimit),
+			TTLSecondsAfterFinished: utils.GetTTL(termination.TTLSecondsAfterFinished),
 			CleanPodPolicy:          spec.CleanPodPolicy,
 			SchedulingPolicy:        spec.SchedulingPolicy,
 		},

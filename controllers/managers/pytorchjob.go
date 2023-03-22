@@ -25,6 +25,7 @@ import (
 	operationv1 "github.com/polyaxon/mloperator/api/v1"
 	"github.com/polyaxon/mloperator/controllers/kfapi"
 	"github.com/polyaxon/mloperator/controllers/kinds"
+	"github.com/polyaxon/mloperator/controllers/utils"
 )
 
 // GeneratePytorchJob returns a PytorchJob
@@ -51,8 +52,8 @@ func GeneratePytorchJob(
 	jobSpec := &kfapi.PyTorchJobSpec{
 		RunPolicy: kfapi.RunPolicy{
 			ActiveDeadlineSeconds:   termination.ActiveDeadlineSeconds,
-			BackoffLimit:            termination.BackoffLimit,
-			TTLSecondsAfterFinished: termination.TTLSecondsAfterFinished,
+			BackoffLimit:            utils.GetBackoffLimit(termination.BackoffLimit),
+			TTLSecondsAfterFinished: utils.GetTTL(termination.TTLSecondsAfterFinished),
 			CleanPodPolicy:          spec.CleanPodPolicy,
 			SchedulingPolicy:        spec.SchedulingPolicy,
 		},

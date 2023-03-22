@@ -117,5 +117,5 @@ func (r *OperationReconciler) reconcilePaddleJobStatus(instance *operationv1.Ope
 }
 
 func (r *OperationReconciler) cleanUpPaddleJob(ctx context.Context, instance *operationv1.Operation) (ctrl.Result, error) {
-	return ctrl.Result{}, nil
+	return r.handleTTL(ctx, instance)
 }
