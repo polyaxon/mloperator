@@ -45,16 +45,22 @@ type Operation struct {
 	PytorchJobSpec *PytorchJobSpec `json:"pytorchJobSpec,omitempty" protobuf:"bytes,9,opt,name=pytorchJobSpec"`
 
 	// Specification of the desired behavior of a PaddleJob.
-	PaddleJobSpec *PaddleJobSpec `json:"paddleJobSpec,omitempty" protobuf:"bytes,9,opt,name=paddleJobSpec"`
+	PaddleJobSpec *PaddleJobSpec `json:"paddleJobSpec,omitempty" protobuf:"bytes,10,opt,name=paddleJobSpec"`
 
 	// Specification of the desired behavior of a MXJob.
-	MXJobSpec *MXJobSpec `json:"mxJobSpec,omitempty" protobuf:"bytes,9,opt,name=mxJobSpec"`
+	MXJobSpec *MXJobSpec `json:"mxJobSpec,omitempty" protobuf:"bytes,11,opt,name=mxJobSpec"`
 
 	// Specification of the desired behavior of a XGBoostJob.
-	XGBoostJobSpec *XGBoostJobSpec `json:"xgboostJobSpec,omitempty" protobuf:"bytes,9,opt,name=xgboostJobSpec"`
+	XGBoostJobSpec *XGBoostJobSpec `json:"xgboostJobSpec,omitempty" protobuf:"bytes,12,opt,name=xgboostJobSpec"`
 
 	// Specification of the desired behavior of a MPIJob.
-	MPIJobSpec *MPIJobSpec `json:"mpiJobSpec,omitempty" protobuf:"bytes,10,opt,name=mpiJobSpec"`
+	MPIJobSpec *MPIJobSpec `json:"mpiJobSpec,omitempty" protobuf:"bytes,13,opt,name=mpiJobSpec"`
+
+	// Specification of the desired behavior of a DaskJob.
+	DaskJobSpec *DaskJobSpec `json:"DaskJobSpec,omitempty" protobuf:"bytes,14,opt,name=daskJobSpec"`
+
+	// Specification of the desired behavior of a RayJob.
+	RayJobSpec *DaskJobSpec `json:"RayJobSpec,omitempty" protobuf:"bytes,15,opt,name=rayJobSpec"`
 
 	// Current status of an op.
 	// +optional

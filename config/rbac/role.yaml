@@ -232,6 +232,26 @@ rules:
   - patch
   - update
 - apiGroups:
+  - kubernetes.dask.org
+  resources:
+  - daskjobs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kubernetes.dask.org
+  resources:
+  - daskjobs/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - networking.istio.io
   resources:
   - destinationrules
@@ -267,6 +287,26 @@ rules:
   - networking.istio.io
   resources:
   - virtualservices/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - ray.io
+  resources:
+  - rayjobs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ray.io
+  resources:
+  - rayjobs/status
   verbs:
   - get
   - patch
