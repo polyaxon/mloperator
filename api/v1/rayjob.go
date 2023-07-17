@@ -31,14 +31,6 @@ type RayReplicaSpec struct {
 // RayJobSpec defines the desired state of a Ray job
 // +k8s:openapi-gen=true
 type RayJobSpec struct {
-	// Defines the policy for cleaning up pods after the Job completes.
-	// Defaults to Running.
-	CleanPodPolicy *CleanPodPolicy `json:"cleanPodPolicy,omitempty" protobuf:"bytes,1,opt,name=cleanPodPolicy"`
-
-	// SchedulingPolicy defines the policy related to scheduling, e.g. gang-scheduling
-	// +optional
-	SchedulingPolicy *SchedulingPolicy `json:"schedulingPolicy,omitempty"  protobuf:"bytes,2,opt,name=schedulingPolicy"`
-
 	// Head replica spec
 	Head KFReplicaSpec `json:"head" protobuf:"bytes,3,opt,name=head"`
 	// Worker replicas spec

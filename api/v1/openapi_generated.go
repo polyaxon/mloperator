@@ -431,6 +431,48 @@ func schema_polyaxon_operator_api_v1_TFJobSpec(ref common.ReferenceCallback) com
 	}
 }
 
+func schema_polyaxon_operator_api_v1_RayJobSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "RayJobSpec defines the desired state of a ray job",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"termination": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Specifies the number of retries before marking this job failed.",
+							Ref:         ref("github.com/polyaxon/mloperator/api/v1.TerminationSpec"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kubeflow/tf-operator/pkg/apis/common/v1.ReplicaSpec", "github.com/polyaxon/mloperator/api/v1.TerminationSpec"},
+	}
+}
+
+func schema_polyaxon_operator_api_v1_DaskJobSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "RayJobSpec defines the desired state of a ray job",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"termination": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Specifies the number of retries before marking this job failed.",
+							Ref:         ref("github.com/polyaxon/mloperator/api/v1.TerminationSpec"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kubeflow/tf-operator/pkg/apis/common/v1.ReplicaSpec", "github.com/polyaxon/mloperator/api/v1.TerminationSpec"},
+	}
+}
+
 func schema_polyaxon_operator_api_v1_TerminationSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
