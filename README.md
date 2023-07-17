@@ -25,4 +25,4 @@ This project is a Kubernetes controller that manages and watches Customer Resour
 
 ## Kubeflow operators
 
-This Operator extends natively [Kubeflow-Operators](https://github.com/polyaxon/training-operator) (TFJob/PytorchJob/MXNet/XGBoost/MPI/Paddle).
+This Operator extends natively [Kubeflow-Operators](https://github.com/polyaxon/training-operator) (TFJob/PytorchJob/MXNet/XGBoost/MPI/Paddle), Dask Operator, Ray Operator, and Spark Operator.
