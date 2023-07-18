@@ -7,13 +7,17 @@ import (
 	operationv1 "github.com/polyaxon/mloperator/api/v1"
 )
 
-// generateKFReplica generates a new ReplocaSpec
-func generateKFReplica(replicSpec operationv1.KFReplicaSpec) *operationv1.KFReplicaSpec {
+// generateKFReplica generates a new ReplicaSpec
+func generateKFReplica(replicSpec operationv1.KFReplicaSpec, labels map[string]string) *operationv1.KFReplicaSpec {
+	l := make(map[string]string)
+	for k, v := range labels {
+		l[k] = v
+	}
 	return &operationv1.KFReplicaSpec{
 		Replicas:      replicSpec.Replicas,
 		RestartPolicy: replicSpec.RestartPolicy,
 		Template: corev1.PodTemplateSpec{
-			ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{}},
+			ObjectMeta: metav1.ObjectMeta{Labels: l},
 			Spec:       replicSpec.Template.Spec,
 		},
 	}

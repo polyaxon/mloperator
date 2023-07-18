@@ -22,15 +22,7 @@ func GenerateXGBJob(
 ) (*unstructured.Unstructured, error) {
 	replicaSpecs := map[operationv1.XGBReplicaType]*operationv1.KFReplicaSpec{}
 	for k, v := range spec.ReplicaSpecs {
-		replicaSpecs[operationv1.XGBReplicaType(k)] = generateKFReplica(v)
-	}
-
-	// copy all of the labels to the pod including pod default related labels
-	for _, replicaSpec := range replicaSpecs {
-		l := &replicaSpec.Template.ObjectMeta.Labels
-		for k, v := range labels {
-			(*l)[k] = v
-		}
+		replicaSpecs[operationv1.XGBReplicaType(k)] = generateKFReplica(v, labels)
 	}
 
 	jobSpec := &kfapi.XGBoostJobSpec{

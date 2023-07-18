@@ -68,6 +68,14 @@ func GenerateJob(
 	if podSpec.RestartPolicy == "" {
 		podSpec.RestartPolicy = utils.DefaultRestartPolicy
 	}
+	l := make(map[string]string)
+	for k, v := range labels {
+		l[k] = v
+	}
+	a := make(map[string]string)
+	for k, v := range annotations {
+		a[k] = v
+	}
 
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
@@ -81,22 +89,10 @@ func GenerateJob(
 			ActiveDeadlineSeconds:   activeDeadlineSeconds,
 			TTLSecondsAfterFinished: utils.GetTTL(ttlSecondsAfterFinished),
 			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{}, Annotations: map[string]string{}},
+				ObjectMeta: metav1.ObjectMeta{Labels: l, Annotations: a},
 				Spec:       podSpec,
 			},
 		},
-	}
-
-	// copy all of the labels to the pod including poddefault related labels
-	l := &job.Spec.Template.ObjectMeta.Labels
-	for k, v := range labels {
-		(*l)[k] = v
-	}
-
-	// copy all of the annotations to the pod including poddefault related labels
-	a := &job.Spec.Template.ObjectMeta.Annotations
-	for k, v := range annotations {
-		(*a)[k] = v
 	}
 
 	return job

@@ -63,6 +63,15 @@ func GenerateDeployment(
 	replicas int32,
 	spec corev1.PodSpec,
 ) (*appsv1.Deployment, error) {
+	l := make(map[string]string)
+	for k, v := range labels {
+		l[k] = v
+	}
+	a := make(map[string]string)
+	for k, v := range annotations {
+		a[k] = v
+	}
+
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        name,
@@ -76,21 +85,10 @@ func GenerateDeployment(
 				MatchLabels: labels,
 			},
 			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{}, Annotations: map[string]string{}},
+				ObjectMeta: metav1.ObjectMeta{Labels: l, Annotations: a},
 				Spec:       spec,
 			},
 		},
-	}
-	// copy all of the labels to the pod including poddefault related labels
-	l := &deployment.Spec.Template.ObjectMeta.Labels
-	for k, v := range labels {
-		(*l)[k] = v
-	}
-
-	// copy all of the annotations to the pod including poddefault related labels
-	a := &deployment.Spec.Template.ObjectMeta.Annotations
-	for k, v := range annotations {
-		(*a)[k] = v
 	}
 
 	// Check container
