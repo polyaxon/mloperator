@@ -52,6 +52,12 @@ type OperationReconciler struct {
 // +kubebuilder:rbac:groups=kubeflow.org,resources=mpijobs/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=kubeflow.org,resources=paddlejobs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=kubeflow.org,resources=paddlejobs/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=kubernetes.dask.org,resources=daskjobs,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=kubernetes.dask.org,resources=daskjobs/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=ray.io,resources=rayjobs,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=ray.io,resources=rayjobs/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=sparkoperator.k8s.io,resources=sparkapplications,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=sparkoperator.k8s.io,resources=sparkapplications/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=networking.istio.io,resources=virtualservices,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=networking.istio.io,resources=virtualservices/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=networking.istio.io,resources=destinationrules,verbs=get;list;watch;create;update;patch;delete
@@ -111,6 +117,12 @@ func (r *OperationReconciler) reconcileOperation(ctx context.Context, instance *
 		return r.reconcileXGBJobOp(ctx, instance)
 	} else if instance.MPIJobSpec != nil {
 		return r.reconcileMPIJobOp(ctx, instance)
+	} else if instance.DaskJobSpec != nil {
+		return r.reconcileDaskJobOp(ctx, instance)
+	} else if instance.RayJobSpec != nil {
+		return r.reconcileRayJobOp(ctx, instance)
+	} else if instance.SparkJobSpec != nil {
+		return r.reconcileSparkJobOp(ctx, instance)
 	}
 	return ctrl.Result{}, nil
 }
@@ -132,6 +144,12 @@ func (r *OperationReconciler) cleanUpOperation(ctx context.Context, instance *op
 		return r.cleanUpXGBJob(ctx, instance)
 	} else if instance.MPIJobSpec != nil {
 		return r.cleanUpMPIJob(ctx, instance)
+	} else if instance.DaskJobSpec != nil {
+		return r.cleanUpDaskJob(ctx, instance)
+	} else if instance.RayJobSpec != nil {
+		return r.cleanUpRayJob(ctx, instance)
+	} else if instance.SparkJobSpec != nil {
+		return r.cleanUpSparkJob(ctx, instance)
 	}
 	return ctrl.Result{}, nil
 }
@@ -194,6 +212,18 @@ func (r *OperationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		sparkJob.SetAPIVersion(kinds.SparkAPIVersion)
 		sparkJob.SetKind(kinds.SparkApplicationKind)
 		controllerManager.Owns(sparkJob)
+	}
+	if config.GetBoolEnv(config.DaskJobEnabled, false) {
+		daskJob := &unstructured.Unstructured{}
+		daskJob.SetAPIVersion(kinds.DaskAPIVersion)
+		daskJob.SetKind(kinds.DaskJobKind)
+		controllerManager.Owns(daskJob)
+	}
+	if config.GetBoolEnv(config.RayJobEnabled, false) {
+		rayJob := &unstructured.Unstructured{}
+		rayJob.SetAPIVersion(kinds.RayAPIVersion)
+		rayJob.SetKind(kinds.RayJobKind)
+		controllerManager.Owns(rayJob)
 	}
 	return controllerManager.Complete(r)
 }

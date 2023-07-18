@@ -33,4 +33,16 @@ const (
 
 	// SparkApplicationKind Spark application kind
 	SparkApplicationKind = "SparkApplication"
+
+	// DaskAPIVersion Dask operator api version
+	DaskAPIVersion = "kubernetes.dask.org/v1"
+
+	// DaskJobKind Dask job kind
+	DaskJobKind = "DaskJob"
+
+	// RayAPIVersion Ray operator api version
+	RayAPIVersion = "ray.io/v1alpha1"
+
+	// RayJobKind Ray job kind
+	RayJobKind = "RayJob"
 )

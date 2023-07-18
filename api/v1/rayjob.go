@@ -4,7 +4,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// KFReplicaSpec is a description of kubeflow replica
+// RayReplicaSpec is a description of ray replica
 // +k8s:openapi-gen=true
 type RayReplicaSpec struct {
 	// we can have multiple worker groups, we distinguish them by name
@@ -31,8 +31,16 @@ type RayReplicaSpec struct {
 // RayJobSpec defines the desired state of a Ray job
 // +k8s:openapi-gen=true
 type RayJobSpec struct {
+	// Important: Run "make" to regenerate code after modifying this file
+	Entrypoint string `json:"entrypoint"`
+	// Metadata is data to store along with this job.
+	Metadata map[string]string `json:"metadata,omitempty"`
+	// RuntimeEnv is base64 encoded.
+	RuntimeEnv string `json:"runtimeEnv,omitempty"`
+	// RayVersion is the version of ray being used. This determines the autoscaler's image version.
+	RayVersion string `json:"rayVersion,omitempty"`
 	// Head replica spec
-	Head KFReplicaSpec `json:"head" protobuf:"bytes,3,opt,name=head"`
+	Head RayReplicaSpec `json:"head" protobuf:"bytes,3,opt,name=head"`
 	// Worker replicas spec
-	Workers []KFReplicaSpec `json:"workers" protobuf:"bytes,3,opt,name=workers"`
+	Workers []RayReplicaSpec `json:"workers" protobuf:"bytes,3,opt,name=workers"`
 }

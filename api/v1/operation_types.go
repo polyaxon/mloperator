@@ -60,7 +60,10 @@ type Operation struct {
 	DaskJobSpec *DaskJobSpec `json:"DaskJobSpec,omitempty" protobuf:"bytes,14,opt,name=daskJobSpec"`
 
 	// Specification of the desired behavior of a RayJob.
-	RayJobSpec *DaskJobSpec `json:"RayJobSpec,omitempty" protobuf:"bytes,15,opt,name=rayJobSpec"`
+	RayJobSpec *RayJobSpec `json:"RayJobSpec,omitempty" protobuf:"bytes,15,opt,name=rayJobSpec"`
+
+	// Specification of the desired behavior of a SparkJob.
+	SparkJobSpec *SparkJobSpec `json:"SparkJobSpec,omitempty" protobuf:"bytes,16,opt,name=sparkJobSpec"`
 
 	// Current status of an op.
 	// +optional

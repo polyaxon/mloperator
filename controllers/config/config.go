@@ -36,6 +36,12 @@ const (
 	// SparkJobEnabled is a flag to enable Spark conroller
 	SparkJobEnabled = "POLYAXON_SPARK_JOB_ENABLED"
 
+	// RayJobEnabled is a flag to enable Ray conroller
+	DaskJobEnabled = "POLYAXON_DASK_JOB_ENABLED"
+
+	// RayJobEnabled is a flag to enable Ray conroller
+	RayJobEnabled = "POLYAXON_RAY_JOB_ENABLED"
+
 	// IstioEnabled is a flag to enable istio controller
 	IstioEnabled = "POLYAXON_ISTIO_ENABLED"
 
