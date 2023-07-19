@@ -56,12 +56,25 @@ type SparkJobSpec struct {
 	// +optional
 	Volumes []corev1.Volume `json:"volumes,omitempty" protobuf:"bytes,11,opt,name=volumes"`
 
-	// Spark executor definition
-	Executor SparkReplicaSpec `json:"executor" protobuf:"bytes,12,opt,name=executor"`
-
-	// Spark driver definition
-	Driver SparkReplicaSpec `json:"driver" protobuf:"bytes,13,opt,name=driver"`
+	// A map of ReplicaType (type) to ReplicaSpec (value). Specifies the Dask cluster configuration.
+	// For example,
+	//   {
+	//     "Executor": DaskReplicaSpec,
+	//     "Driver": DaskReplicaSpec,
+	//   }
+	ReplicaSpecs map[SparkReplicaType]SparkReplicaSpec `json:"replicaSpecs" protobuf:"bytes,12,opt,name=replicaSpecs"`
 }
+
+// SparkReplicaType is the type for PyTorchReplica. Can be one of "Executor" or "Driver".
+type SparkReplicaType string
+
+const (
+	// SparkReplicaTypeExecutor is the type of Executor of distributed PyTorch
+	SparkReplicaTypeExecutor SparkReplicaType = "Executor"
+
+	// SparkReplicaTypeDriver is the type for workers of distributed PyTorch.
+	SparkReplicaTypeDriver SparkReplicaType = "Driver"
+)
 
 // SparkReplicaSpec is a description of a spark replica
 // +k8s:openapi-gen=true

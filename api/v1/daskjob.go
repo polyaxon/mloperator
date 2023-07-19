@@ -23,10 +23,26 @@ type DaskReplicaSpec struct {
 // DaskJobSpec defines the desired state of a Dask job
 // +k8s:openapi-gen=true
 type DaskJobSpec struct {
-	// Job replica spec
-	Job DaskReplicaSpec `json:"head" protobuf:"bytes,3,opt,name=job"`
-	// Worker replicas spec
-	Worker DaskReplicaSpec `json:"workers" protobuf:"bytes,3,opt,name=worker"`
-	// Scheduler replicas spec
-	Scheduler DaskReplicaSpec `json:"scheduler" protobuf:"bytes,3,opt,name=scheduler"`
+	// A map of ReplicaType (type) to ReplicaSpec (value). Specifies the Dask cluster configuration.
+	// For example,
+	//   {
+	//     "Job": DaskReplicaSpec,
+	//     "Worker": DaskReplicaSpec,
+	//     "Scheduler": DaskReplicaSpec,
+	//   }
+	ReplicaSpecs map[DaskReplicaType]DaskReplicaSpec `json:"replicaSpecs" protobuf:"bytes,4,opt,name=replicaSpecs"`
 }
+
+// DaskReplicaType is the type for DaskReplica. Can be one of "Job" or "Worker" or "Scheduler".
+type DaskReplicaType string
+
+const (
+	// DaskReplicaTypeJob is the type of Master of distributed Dask
+	DaskReplicaTypeJob DaskReplicaType = "Job"
+
+	// DaskReplicaTypeWorker is the type for workers of distributed Dask.
+	DaskReplicaTypeWorker DaskReplicaType = "Worker"
+
+	// DaskReplicaTypeScheduler is the type for workers of distributed Dask.
+	DaskReplicaTypeScheduler DaskReplicaType = "Scheduler"
+)
