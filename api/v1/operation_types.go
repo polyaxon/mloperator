@@ -57,13 +57,13 @@ type Operation struct {
 	MPIJobSpec *MPIJobSpec `json:"mpiJobSpec,omitempty" protobuf:"bytes,13,opt,name=mpiJobSpec"`
 
 	// Specification of the desired behavior of a DaskJob.
-	DaskJobSpec *DaskJobSpec `json:"DaskJobSpec,omitempty" protobuf:"bytes,14,opt,name=daskJobSpec"`
+	DaskJobSpec *DaskJobSpec `json:"daskJobSpec,omitempty" protobuf:"bytes,14,opt,name=daskJobSpec"`
 
 	// Specification of the desired behavior of a RayJob.
-	RayJobSpec *RayJobSpec `json:"RayJobSpec,omitempty" protobuf:"bytes,15,opt,name=rayJobSpec"`
+	RayJobSpec *RayJobSpec `json:"rayJobSpec,omitempty" protobuf:"bytes,15,opt,name=rayJobSpec"`
 
 	// Specification of the desired behavior of a SparkJob.
-	SparkJobSpec *SparkJobSpec `json:"SparkJobSpec,omitempty" protobuf:"bytes,16,opt,name=sparkJobSpec"`
+	SparkJobSpec *SparkJobSpec `json:"sparkJobSpec,omitempty" protobuf:"bytes,16,opt,name=sparkJobSpec"`
 
 	// Current status of an op.
 	// +optional

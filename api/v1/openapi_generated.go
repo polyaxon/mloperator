@@ -168,7 +168,7 @@ func schema_polyaxon_operator_api_v1_Operation(ref common.ReferenceCallback) com
 							Ref:         ref("github.com/polyaxon/mloperator/api/v1.DaskJobSpec"),
 						},
 					},
-					"RayJobSpec": {
+					"rayJobSpec": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Specification of the desired behavior of a RayJob.",
 							Ref:         ref("github.com/polyaxon/mloperator/api/v1.RayJobSpec"),
