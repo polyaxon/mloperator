@@ -8,16 +8,16 @@ import (
 // +k8s:openapi-gen=true
 type RayReplicaSpec struct {
 	// we can have multiple worker groups, we distinguish them by name
-	GroupName string `json:"groupName"`
+	GroupName string `json:"groupName,omitempty"`
 	// Replicas is the desired number of replicas of the given template.
 	// If unspecified, defaults to 1.
 	Replicas *int32 `json:"replicas,omitempty"`
 	// MinReplicas defaults to 1
-	MinReplicas *int32 `json:"minReplicas"`
+	MinReplicas *int32 `json:"minReplicas,omitempty"`
 	// MaxReplicas defaults to maxInt32
-	MaxReplicas *int32 `json:"maxReplicas"`
+	MaxReplicas *int32 `json:"maxReplicas,omitempty"`
 	// RayStartParams are the params of the start command: address, object-store-memory, ...
-	RayStartParams map[string]string `json:"rayStartParams"`
+	RayStartParams map[string]string `json:"rayStartParams,omitempty"`
 	// Template is the object that describes the pod that
 	// will be created for this replica. RestartPolicy in PodTemplateSpec
 	// will be overide by RestartPolicy in ReplicaSpec
@@ -32,7 +32,7 @@ type RayReplicaSpec struct {
 // +k8s:openapi-gen=true
 type RayJobSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
-	Entrypoint string `json:"entrypoint"`
+	Entrypoint string `json:"entrypoint,omitempty"`
 	// Metadata is data to store along with this job.
 	Metadata map[string]string `json:"metadata,omitempty"`
 	// RuntimeEnv is base64 encoded.
