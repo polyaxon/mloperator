@@ -14,6 +14,16 @@ import (
 	"github.com/polyaxon/mloperator/controllers/utils"
 )
 
+/*
+GetRayStartParams utils function to handle default case
+*/
+func GetRayStartParams(rayStartParams map[string]string) map[string]string {
+	if rayStartParams != nil && len(rayStartParams) > 0 {
+		return rayStartParams
+	}
+	return make(map[string]string)
+}
+
 // generateHeadGroupSpec generates a new ReplicaSpec
 func generateHeadGroupSpec(replicSpec operationv1.RayReplicaSpec, labels map[string]string) rayapi.HeadGroupSpec {
 	l := make(map[string]string)
@@ -22,7 +32,7 @@ func generateHeadGroupSpec(replicSpec operationv1.RayReplicaSpec, labels map[str
 	}
 
 	return rayapi.HeadGroupSpec{
-		RayStartParams: replicSpec.RayStartParams,
+		RayStartParams: GetRayStartParams(replicSpec.RayStartParams),
 		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{Labels: l},
 			Spec:       replicSpec.Template.Spec,
@@ -31,17 +41,24 @@ func generateHeadGroupSpec(replicSpec operationv1.RayReplicaSpec, labels map[str
 }
 
 // generateWorkerGroupSpec generates a new ReplicaSpec
-func generateWorkerGroupSpec(replicSpec operationv1.RayReplicaSpec, labels map[string]string) rayapi.WorkerGroupSpec {
+func generateWorkerGroupSpec(replicSpec operationv1.RayReplicaSpec, labels map[string]string, idx int) rayapi.WorkerGroupSpec {
 	l := make(map[string]string)
 	for k, v := range labels {
 		l[k] = v
 	}
+	// Use groupName or generate a new name based on idx
+	var groupName string
+	if replicSpec.GroupName != "" {
+		groupName = replicSpec.GroupName
+	} else {
+		groupName = fmt.Sprintf("worker-%d", idx)
+	}
 	return rayapi.WorkerGroupSpec{
-		GroupName:      replicSpec.GroupName,
-		Replicas:       replicSpec.Replicas,
-		MinReplicas:    replicSpec.MinReplicas,
-		MaxReplicas:    replicSpec.MaxReplicas,
-		RayStartParams: replicSpec.RayStartParams,
+		GroupName:      groupName,
+		Replicas:       utils.GetNumReplicas(replicSpec.Replicas),
+		MinReplicas:    utils.GetNumReplicas(replicSpec.MinReplicas),
+		MaxReplicas:    utils.GetNumReplicas(replicSpec.MaxReplicas),
+		RayStartParams: GetRayStartParams(replicSpec.RayStartParams),
 		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{Labels: l},
 			Spec:       replicSpec.Template.Spec,
@@ -58,9 +75,14 @@ func GenerateRayJob(
 	spec operationv1.RayJobSpec,
 ) (*unstructured.Unstructured, error) {
 	head := generateHeadGroupSpec(spec.Head, labels)
-	workers := []rayapi.WorkerGroupSpec{}
-	for i, w := range spec.Workers {
-		workers[i] = generateWorkerGroupSpec(w, labels)
+	var workers []rayapi.WorkerGroupSpec
+	if spec.Workers != nil && len(spec.Workers) > 0 {
+		workers = make([]rayapi.WorkerGroupSpec, len(spec.Workers))
+		for i, w := range spec.Workers {
+			workers = append(workers, generateWorkerGroupSpec(w, labels, i))
+		}
+	} else {
+		workers = nil
 	}
 
 	cluster := &rayapi.RayClusterSpec{

@@ -15,7 +15,7 @@ type HeadGroupSpec struct {
 	// RayStartParams are the params of the start command: node-manager-port, object-store-memory, ...
 	RayStartParams map[string]string `json:"rayStartParams"`
 	// Template is the exact pod template used in K8s depoyments, statefulsets, etc.
-	Template corev1.PodTemplateSpec `json:"template"`
+	Template corev1.PodTemplateSpec `json:"template,omitempty"`
 }
 
 // ScaleStrategy to remove workers
@@ -90,7 +90,7 @@ type RayClusterSpec struct {
 
 type RayJobSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
-	Entrypoint string `json:"entrypoint"`
+	Entrypoint string `json:"entrypoint,omitempty"`
 	// Metadata is data to store along with this job.
 	Metadata map[string]string `json:"metadata,omitempty"`
 	// RuntimeEnv is base64 encoded.

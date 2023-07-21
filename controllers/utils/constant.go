@@ -15,6 +15,8 @@ const (
 	ZeroTTL = 0
 	// TTLDjustment
 	TTLDjustment = 10
+	// DefaultNumReplicas
+	DefaultNumReplicas = 1
 )
 
 /*
@@ -42,4 +44,24 @@ func GetBackoffLimit(backoffLimit *int32) *int32 {
 		jobBackoffLimit = &defaultBackoffLimit
 	}
 	return jobBackoffLimit
+}
+
+/*
+GetNumReplicas utils function to handle default case
+*/
+func GetNumReplicas(numReplicas *int32, defaultValues ...int32) *int32 {
+	opReplicas := numReplicas
+	var defaultNumReplicas int32
+
+	if len(defaultValues) > 0 {
+		defaultNumReplicas = defaultValues[0]
+	} else {
+		defaultNumReplicas = DefaultNumReplicas
+	}
+
+	if numReplicas == nil {
+		opReplicas = &defaultNumReplicas
+	}
+
+	return opReplicas
 }
