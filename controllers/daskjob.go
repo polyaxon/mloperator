@@ -41,7 +41,7 @@ func (r *OperationReconciler) reconcileDaskJob(ctx context.Context, instance *op
 
 	// Check if the Job already exists
 	foundJob := &unstructured.Unstructured{}
-	foundJob.SetAPIVersion(kinds.KFAPIVersion)
+	foundJob.SetAPIVersion(kinds.DaskAPIVersion)
 	foundJob.SetKind(kinds.DaskJobKind)
 	justCreated := false
 	err = r.Get(ctx, types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, foundJob)

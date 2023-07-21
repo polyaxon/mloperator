@@ -49,7 +49,7 @@ func GenerateDaskJob(
 	}
 
 	job := &unstructured.Unstructured{}
-	job.SetAPIVersion(kinds.KFAPIVersion)
+	job.SetAPIVersion(kinds.DaskAPIVersion)
 	job.SetKind(kinds.DaskJobKind)
 	job.SetLabels(labels)
 	job.SetName(name)

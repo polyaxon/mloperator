@@ -41,7 +41,7 @@ func (r *OperationReconciler) reconcileSparkJob(ctx context.Context, instance *o
 
 	// Check if the Job already exists
 	foundJob := &unstructured.Unstructured{}
-	foundJob.SetAPIVersion(kinds.KFAPIVersion)
+	foundJob.SetAPIVersion(kinds.SparkAPIVersion)
 	foundJob.SetKind(kinds.SparkApplicationKind)
 	justCreated := false
 	err = r.Get(ctx, types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, foundJob)

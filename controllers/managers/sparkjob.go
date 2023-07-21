@@ -46,7 +46,7 @@ func GenerateSparkJob(
 	}
 
 	job := &unstructured.Unstructured{}
-	job.SetAPIVersion(kinds.KFAPIVersion)
+	job.SetAPIVersion(kinds.SparkAPIVersion)
 	job.SetKind(kinds.SparkApplicationKind)
 	job.SetLabels(labels)
 	job.SetName(name)

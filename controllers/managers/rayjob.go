@@ -81,7 +81,7 @@ func GenerateRayJob(
 	}
 
 	job := &unstructured.Unstructured{}
-	job.SetAPIVersion(kinds.KFAPIVersion)
+	job.SetAPIVersion(kinds.RayAPIVersion)
 	job.SetKind(kinds.RayJobKind)
 	job.SetLabels(labels)
 	job.SetName(name)

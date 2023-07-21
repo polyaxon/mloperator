@@ -41,7 +41,7 @@ func (r *OperationReconciler) reconcileRayJob(ctx context.Context, instance *ope
 
 	// Check if the Job already exists
 	foundJob := &unstructured.Unstructured{}
-	foundJob.SetAPIVersion(kinds.KFAPIVersion)
+	foundJob.SetAPIVersion(kinds.RayAPIVersion)
 	foundJob.SetKind(kinds.RayJobKind)
 	justCreated := false
 	err = r.Get(ctx, types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, foundJob)
