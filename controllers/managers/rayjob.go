@@ -79,7 +79,7 @@ func GenerateRayJob(
 	if spec.Workers != nil && len(spec.Workers) > 0 {
 		workers = make([]rayapi.WorkerGroupSpec, len(spec.Workers))
 		for i, w := range spec.Workers {
-			workers = append(workers, generateWorkerGroupSpec(w, labels, i))
+			workers[i] = generateWorkerGroupSpec(w, labels, i)
 		}
 	} else {
 		workers = nil
