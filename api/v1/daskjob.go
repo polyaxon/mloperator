@@ -31,6 +31,8 @@ type DaskJobSpec struct {
 	//     "Scheduler": DaskReplicaSpec,
 	//   }
 	ReplicaSpecs map[DaskReplicaType]DaskReplicaSpec `json:"replicaSpecs" protobuf:"bytes,4,opt,name=replicaSpecs"`
+
+	Service corev1.ServiceSpec `json:"service" protobuf:"bytes,5,opt,name=service"`
 }
 
 // DaskReplicaType is the type for DaskReplica. Can be one of "Job" or "Worker" or "Scheduler".

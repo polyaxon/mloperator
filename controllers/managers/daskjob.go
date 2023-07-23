@@ -3,6 +3,7 @@ package managers
 import (
 	"fmt"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -12,7 +13,7 @@ import (
 )
 
 // generateHeadGroupSpec generates a new ReplicaSpec
-func generateClusterSpec(worker operationv1.DaskReplicaSpec, scheduler operationv1.DaskReplicaSpec, labels map[string]string) daskapi.DaskCluster {
+func generateClusterSpec(worker operationv1.DaskReplicaSpec, scheduler operationv1.DaskReplicaSpec, service corev1.ServiceSpec, labels map[string]string) daskapi.DaskCluster {
 	l := make(map[string]string)
 	for k, v := range labels {
 		l[k] = v
@@ -25,7 +26,8 @@ func generateClusterSpec(worker operationv1.DaskReplicaSpec, scheduler operation
 				Spec:     worker.Template.Spec,
 			},
 			Scheduler: daskapi.SchedulerSpec{
-				Spec: scheduler.Template.Spec,
+				Spec:    scheduler.Template.Spec,
+				Service: service,
 			},
 		},
 	}
@@ -39,7 +41,7 @@ func GenerateDaskJob(
 	termination operationv1.TerminationSpec,
 	spec operationv1.DaskJobSpec,
 ) (*unstructured.Unstructured, error) {
-	cluster := generateClusterSpec(spec.ReplicaSpecs[operationv1.DaskReplicaTypeWorker], spec.ReplicaSpecs[operationv1.DaskReplicaTypeScheduler], labels)
+	cluster := generateClusterSpec(spec.ReplicaSpecs[operationv1.DaskReplicaTypeWorker], spec.ReplicaSpecs[operationv1.DaskReplicaTypeScheduler], spec.Service, labels)
 
 	jobSpec := &daskapi.DaskJobSpec{
 		Job: daskapi.JobSpec{
