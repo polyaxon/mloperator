@@ -4,11 +4,14 @@ import (
 	"context"
 
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	operationv1 "github.com/polyaxon/mloperator/api/v1"
+	"github.com/polyaxon/mloperator/controllers/daskapi"
 	"github.com/polyaxon/mloperator/controllers/kinds"
 	"github.com/polyaxon/mloperator/controllers/managers"
 )
@@ -97,7 +100,68 @@ func (r *OperationReconciler) reconcileDaskJob(ctx context.Context, instance *op
 }
 
 func (r *OperationReconciler) reconcileDaskJobStatus(instance *operationv1.Operation, job unstructured.Unstructured) (bool, error) {
-	return r.reconcileKFJobStatus(instance, job)
+	now := metav1.Now()
+	log := r.Log
+
+	// Check the pods
+	podStatus, reason, message := managers.HasUnschedulablePods(r.Client, instance)
+	if podStatus == operationv1.OperationWarning {
+		log.V(1).Info("Service has unschedulable pod(s)", "Reason", reason, "message", message)
+		if updated := instance.LogWarning(reason, message); updated {
+			log.V(1).Info("Service Logging Status Warning")
+			return true, nil
+		}
+		return false, nil
+	}
+
+	status, ok, unerr := unstructured.NestedFieldCopy(job.Object, "status")
+	if !ok {
+		if unerr != nil {
+			log.Error(unerr, "NestedFieldCopy unstructured to status error")
+			return false, nil
+		}
+		log.Info("NestedFieldCopy unstructured to status error",
+			"err", "Status is not found in job")
+		return false, nil
+	}
+
+	statusMap := status.(map[string]interface{})
+	jobStatus := daskapi.DaskJobStatus{}
+	err := runtime.DefaultUnstructuredConverter.FromUnstructured(statusMap, &jobStatus)
+	if err != nil {
+		log.Error(err, "Convert unstructured to status error")
+		return false, err
+	}
+
+	if jobStatus.JobStatus == daskapi.DaskJobCreated {
+		instance.LogWarning("Cluster created", "Waiting for scheduler and workers to start")
+		log.V(1).Info("Job Logging Status Running")
+		return true, nil
+	}
+
+	if jobStatus.JobStatus == daskapi.DaskJobRunning {
+		instance.LogRunning()
+		log.V(1).Info("Job Logging Status Running")
+		return true, nil
+	}
+
+	if jobStatus.JobStatus == daskapi.DaskJobSuccessful {
+		instance.LogSucceeded()
+		instance.Status.CompletionTime = &now
+		log.V(1).Info("Job Logging Status Succeeded")
+		return true, nil
+	}
+
+	if jobStatus.JobStatus == daskapi.DaskJobFailed {
+		newMessage := operationv1.GetFailureMessage("Job failed", podStatus, reason, message)
+		if updated := instance.LogFailed(reason, newMessage); updated {
+			instance.Status.CompletionTime = &now
+			log.V(1).Info("Job Logging Status Failed", "Message", newMessage, "podStatus", podStatus, "PodMessage", message)
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 func (r *OperationReconciler) cleanUpDaskJob(ctx context.Context, instance *operationv1.Operation) (ctrl.Result, error) {
