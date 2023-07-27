@@ -77,12 +77,20 @@ func NewOperationCondition(conditionType OperationConditionType, status corev1.C
 	}
 }
 
-func GetFailureMessage(entityMessage string, status OperationConditionType, reason string, message string) string {
+func GetMessage(condition OperationConditionType, entityMessage string, status OperationConditionType, reason string, message string) string {
 	newMessage := entityMessage
-	if status == OperationFailed && message != "" {
+	if status == condition && message != "" {
 		newMessage = newMessage + " (Pod: <reason: " + reason + ", message " + message + ")"
 	}
 	return newMessage
+}
+
+func GetFailureMessage(entityMessage string, status OperationConditionType, reason string, message string) string {
+	return GetMessage(OperationFailed, entityMessage, status, reason, message)
+}
+
+func GetStoppedMessage(entityMessage string, status OperationConditionType, reason string, message string) string {
+	return GetMessage(OperationStopped, entityMessage, status, reason, message)
 }
 
 // getOrUpdateOperationCondition get new or updated version of current confition or returns nil if nothing changed

@@ -28,7 +28,9 @@ func GetRayStartParams(rayStartParams map[string]string) map[string]string {
 func generateHeadGroupSpec(replicSpec operationv1.RayReplicaSpec, labels map[string]string) rayapi.HeadGroupSpec {
 	l := make(map[string]string)
 	for k, v := range labels {
-		l[k] = v
+		if k != "app.kubernetes.io/name" {
+			l[k] = v
+		}
 	}
 
 	return rayapi.HeadGroupSpec{
@@ -44,7 +46,9 @@ func generateHeadGroupSpec(replicSpec operationv1.RayReplicaSpec, labels map[str
 func generateWorkerGroupSpec(replicSpec operationv1.RayReplicaSpec, labels map[string]string, idx int) rayapi.WorkerGroupSpec {
 	l := make(map[string]string)
 	for k, v := range labels {
-		l[k] = v
+		if k != "app.kubernetes.io/name" {
+			l[k] = v
+		}
 	}
 	// Use groupName or generate a new name based on idx
 	var groupName string

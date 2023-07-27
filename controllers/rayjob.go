@@ -4,13 +4,16 @@ import (
 	"context"
 
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	operationv1 "github.com/polyaxon/mloperator/api/v1"
 	"github.com/polyaxon/mloperator/controllers/kinds"
 	"github.com/polyaxon/mloperator/controllers/managers"
+	"github.com/polyaxon/mloperator/controllers/rayapi"
 )
 
 func (r *OperationReconciler) reconcileRayJobOp(ctx context.Context, instance *operationv1.Operation) (ctrl.Result, error) {
@@ -97,7 +100,76 @@ func (r *OperationReconciler) reconcileRayJob(ctx context.Context, instance *ope
 }
 
 func (r *OperationReconciler) reconcileRayJobStatus(instance *operationv1.Operation, job unstructured.Unstructured) (bool, error) {
-	return r.reconcileKFJobStatus(instance, job)
+	now := metav1.Now()
+	log := r.Log
+
+	// Check the pods
+	podStatus, reason, message := managers.HasUnschedulablePods(r.Client, instance)
+	if podStatus == operationv1.OperationWarning {
+		log.V(1).Info("Service has unschedulable pod(s)", "Reason", reason, "message", message)
+		if updated := instance.LogWarning(reason, message); updated {
+			log.V(1).Info("Service Logging Status Warning")
+			return true, nil
+		}
+		return false, nil
+	}
+
+	status, ok, unerr := unstructured.NestedFieldCopy(job.Object, "status")
+	if !ok {
+		if unerr != nil {
+			log.Error(unerr, "NestedFieldCopy unstructured to status error")
+			return false, nil
+		}
+		log.Info("NestedFieldCopy unstructured to status error",
+			"err", "Status is not found in job")
+		return false, nil
+	}
+
+	statusMap := status.(map[string]interface{})
+	jobStatus := rayapi.RayJobStatus{}
+	err := runtime.DefaultUnstructuredConverter.FromUnstructured(statusMap, &jobStatus)
+	if err != nil {
+		log.Error(err, "Convert unstructured to status error")
+		return false, err
+	}
+
+	if jobStatus.JobStatus == rayapi.JobStatusRunning {
+		instance.LogRunning()
+		log.V(1).Info("Job Logging Status Running")
+		return true, nil
+	}
+
+	if jobStatus.JobStatus == rayapi.JobStatusSucceeded {
+		instance.LogSucceeded()
+		instance.Status.CompletionTime = &now
+		log.V(1).Info("Job Logging Status Succeeded")
+		return true, nil
+	}
+
+	if jobStatus.JobStatus == rayapi.JobStatusFailed {
+		newMessage := operationv1.GetFailureMessage(jobStatus.Message, podStatus, reason, message)
+		if updated := instance.LogFailed(reason, newMessage); updated {
+			instance.Status.CompletionTime = &now
+			log.V(1).Info("Job Logging Status Failed", "Message", newMessage, "podStatus", podStatus, "PodMessage", message)
+			return true, nil
+		}
+	}
+
+	if jobStatus.JobStatus == rayapi.JobStatusStopped {
+		newMessage := operationv1.GetFailureMessage(jobStatus.Message, podStatus, reason, message)
+		if updated := instance.LogStopped(jobStatus.RayClusterStatus.Reason, newMessage); updated {
+			instance.Status.CompletionTime = &now
+			log.V(1).Info("Job Logging Status Stopped", "Message", newMessage, "podStatus", podStatus, "PodMessage", message)
+			return true, nil
+		}
+	}
+
+	if jobStatus.JobStatus == rayapi.JobStatusPending {
+		instance.LogWarning(jobStatus.RayClusterStatus.Reason, jobStatus.Message)
+		log.V(1).Info("Job Logging Status Warning")
+		return true, nil
+	}
+	return false, nil
 }
 
 func (r *OperationReconciler) cleanUpRayJob(ctx context.Context, instance *operationv1.Operation) (ctrl.Result, error) {

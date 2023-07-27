@@ -2,7 +2,101 @@ package rayapi
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+type JobStatus string
+
+// https://docs.ray.io/en/latest/cluster/running-applications/job-submission/jobs-package-ref.html#jobstatus
+const (
+	JobStatusPending   JobStatus = "PENDING"
+	JobStatusRunning   JobStatus = "RUNNING"
+	JobStatusStopped   JobStatus = "STOPPED"
+	JobStatusSucceeded JobStatus = "SUCCEEDED"
+	JobStatusFailed    JobStatus = "FAILED"
+)
+
+// JobDeploymentStatus indicates RayJob status including RayCluster lifecycle management and Job submission
+type JobDeploymentStatus string
+
+const (
+	JobDeploymentStatusInitializing                  JobDeploymentStatus = "Initializing"
+	JobDeploymentStatusFailedToGetOrCreateRayCluster JobDeploymentStatus = "FailedToGetOrCreateRayCluster"
+	JobDeploymentStatusWaitForDashboard              JobDeploymentStatus = "WaitForDashboard"
+	JobDeploymentStatusWaitForK8sJob                 JobDeploymentStatus = "WaitForK8sJob"
+	JobDeploymentStatusFailedJobDeploy               JobDeploymentStatus = "FailedJobDeploy"
+	JobDeploymentStatusRunning                       JobDeploymentStatus = "Running"
+	JobDeploymentStatusFailedToGetJobStatus          JobDeploymentStatus = "FailedToGetJobStatus"
+	JobDeploymentStatusComplete                      JobDeploymentStatus = "Complete"
+	JobDeploymentStatusSuspended                     JobDeploymentStatus = "Suspended"
+)
+
+// RayJobStatus defines the observed state of RayJob
+type RayJobStatus struct {
+	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+	JobId               string              `json:"jobId,omitempty"`
+	RayClusterName      string              `json:"rayClusterName,omitempty"`
+	DashboardURL        string              `json:"dashboardURL,omitempty"`
+	JobStatus           JobStatus           `json:"jobStatus,omitempty"`
+	JobDeploymentStatus JobDeploymentStatus `json:"jobDeploymentStatus,omitempty"`
+	Message             string              `json:"message,omitempty"`
+	// Represents time when the job was acknowledged by the Ray cluster.
+	// It is not guaranteed to be set in happens-before order across separate operations.
+	// It is represented in RFC3339 form
+	StartTime *metav1.Time `json:"startTime,omitempty"`
+	// Represents time when the job was ended.
+	EndTime          *metav1.Time     `json:"endTime,omitempty"`
+	RayClusterStatus RayClusterStatus `json:"rayClusterStatus,omitempty"`
+	// observedGeneration is the most recent generation observed for this RayJob. It corresponds to the
+	// RayJob's generation, which is updated on mutation by the API Server.
+	// +optional
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+}
+
+// The overall state of the Ray cluster.
+type ClusterState string
+
+const (
+	Ready     ClusterState = "ready"
+	Unhealthy ClusterState = "unhealthy"
+	Failed    ClusterState = "failed"
+)
+
+// RayClusterStatus defines the observed state of RayCluster
+type RayClusterStatus struct {
+	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+	// Status reflects the status of the cluster
+	State ClusterState `json:"state,omitempty"`
+	// AvailableWorkerReplicas indicates how many replicas are available in the cluster
+	AvailableWorkerReplicas int32 `json:"availableWorkerReplicas,omitempty"`
+	// DesiredWorkerReplicas indicates overall desired replicas claimed by the user at the cluster level.
+	DesiredWorkerReplicas int32 `json:"desiredWorkerReplicas,omitempty"`
+	// MinWorkerReplicas indicates sum of minimum replicas of each node group.
+	MinWorkerReplicas int32 `json:"minWorkerReplicas,omitempty"`
+	// MaxWorkerReplicas indicates sum of maximum replicas of each node group.
+	MaxWorkerReplicas int32 `json:"maxWorkerReplicas,omitempty"`
+	// LastUpdateTime indicates last update timestamp for this cluster status.
+	// +nullable
+	LastUpdateTime *metav1.Time `json:"lastUpdateTime,omitempty"`
+	// Service Endpoints
+	Endpoints map[string]string `json:"endpoints,omitempty"`
+	// Head info
+	Head HeadInfo `json:"head,omitempty"`
+	// Reason provides more information about current State
+	Reason string `json:"reason,omitempty"`
+	// observedGeneration is the most recent generation observed for this RayCluster. It corresponds to the
+	// RayCluster's generation, which is updated on mutation by the API Server.
+	// +optional
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+}
+
+// HeadInfo gives info about head
+type HeadInfo struct {
+	PodIP     string `json:"podIP,omitempty"`
+	ServiceIP string `json:"serviceIP,omitempty"`
+}
 
 // HeadGroupSpec are the spec for the head pod
 type HeadGroupSpec struct {
