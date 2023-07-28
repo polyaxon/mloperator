@@ -62,9 +62,6 @@ type Operation struct {
 	// Specification of the desired behavior of a RayJob.
 	RayJobSpec *RayJobSpec `json:"rayJobSpec,omitempty" protobuf:"bytes,15,opt,name=rayJobSpec"`
 
-	// Specification of the desired behavior of a SparkJob.
-	SparkJobSpec *SparkJobSpec `json:"sparkJobSpec,omitempty" protobuf:"bytes,16,opt,name=sparkJobSpec"`
-
 	// Current status of an op.
 	// +optional
 	Status OperationStatus `json:"status,omitempty" protobuf:"bytes,11,opt,name=status"`

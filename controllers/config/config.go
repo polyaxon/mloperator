@@ -33,9 +33,6 @@ const (
 	// XGBoostJobEnabled is a flag to enable MPIJob conroller
 	XGBoostJobEnabled = "POLYAXON_XGBOOST_JOB_ENABLED"
 
-	// SparkJobEnabled is a flag to enable Spark conroller
-	SparkJobEnabled = "POLYAXON_SPARK_JOB_ENABLED"
-
 	// RayJobEnabled is a flag to enable Ray conroller
 	DaskJobEnabled = "POLYAXON_DASK_JOB_ENABLED"
 

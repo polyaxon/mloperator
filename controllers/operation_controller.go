@@ -56,8 +56,6 @@ type OperationReconciler struct {
 // +kubebuilder:rbac:groups=kubernetes.dask.org,resources=daskjobs/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=ray.io,resources=rayjobs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=ray.io,resources=rayjobs/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=sparkoperator.k8s.io,resources=sparkapplications,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=sparkoperator.k8s.io,resources=sparkapplications/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=networking.istio.io,resources=virtualservices,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=networking.istio.io,resources=virtualservices/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=networking.istio.io,resources=destinationrules,verbs=get;list;watch;create;update;patch;delete
@@ -121,8 +119,6 @@ func (r *OperationReconciler) reconcileOperation(ctx context.Context, instance *
 		return r.reconcileDaskJobOp(ctx, instance)
 	} else if instance.RayJobSpec != nil {
 		return r.reconcileRayJobOp(ctx, instance)
-	} else if instance.SparkJobSpec != nil {
-		return r.reconcileSparkJobOp(ctx, instance)
 	}
 	return ctrl.Result{}, nil
 }
@@ -148,8 +144,6 @@ func (r *OperationReconciler) cleanUpOperation(ctx context.Context, instance *op
 		return r.cleanUpDaskJob(ctx, instance)
 	} else if instance.RayJobSpec != nil {
 		return r.cleanUpRayJob(ctx, instance)
-	} else if instance.SparkJobSpec != nil {
-		return r.cleanUpSparkJob(ctx, instance)
 	}
 	return ctrl.Result{}, nil
 }
@@ -206,12 +200,6 @@ func (r *OperationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		istioVirtualService.SetAPIVersion(kinds.IstioAPIVersion)
 		istioVirtualService.SetKind(kinds.IstioVirtualServiceKind)
 		controllerManager.Owns(istioVirtualService)
-	}
-	if config.GetBoolEnv(config.SparkJobEnabled, false) {
-		sparkJob := &unstructured.Unstructured{}
-		sparkJob.SetAPIVersion(kinds.SparkAPIVersion)
-		sparkJob.SetKind(kinds.SparkApplicationKind)
-		controllerManager.Owns(sparkJob)
 	}
 	if config.GetBoolEnv(config.DaskJobEnabled, false) {
 		daskJob := &unstructured.Unstructured{}

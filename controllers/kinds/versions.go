@@ -28,12 +28,6 @@ const (
 	// IstioVirtualServiceKind istio virtual service kind
 	IstioVirtualServiceKind = "VirtualService"
 
-	// SparkAPIVersion Spark operator api version
-	SparkAPIVersion = "sparkoperator.k8s.io/v1beta2"
-
-	// SparkApplicationKind Spark application kind
-	SparkApplicationKind = "SparkApplication"
-
 	// DaskAPIVersion Dask operator api version
 	DaskAPIVersion = "kubernetes.dask.org/v1"
 

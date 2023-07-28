@@ -23,6 +23,6 @@ This project is a Kubernetes controller that manages and watches Customer Resour
 
 ![MLOperator Architecture](./artifacts/MLOperator-architecture.png)
 
-## Kubeflow operators
+## Kubeflow, Ray, and Dask operators
 
-This Operator extends natively [Kubeflow-Operators](https://github.com/polyaxon/training-operator) (TFJob/PytorchJob/MXNet/XGBoost/MPI/Paddle), Dask Operator, Ray Operator, and Spark Operator.
+This Operator extends natively [Kubeflow-Operators](https://github.com/polyaxon/training-operator) (TFJob/PytorchJob/MXNet/XGBoost/MPI/Paddle), Dask Operator, Ray Operator.
