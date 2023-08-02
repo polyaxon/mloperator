@@ -8,7 +8,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	operationv1 "github.com/polyaxon/mloperator/api/v1"
-	"github.com/polyaxon/mloperator/controllers/config"
 )
 
 const (
@@ -68,7 +67,7 @@ func GenerateService(name string, namespace string, labels map[string]string, an
 	for _, sp := range ports {
 		sports = append(sports, corev1.ServicePort{
 			Name:       name,
-			Port:       int32(config.GetIntEnv(config.ProxyServicesPort, DefaultServingPort)),
+			Port:       sp,
 			TargetPort: intstr.FromInt(int(sp)),
 			Protocol:   "TCP",
 		})

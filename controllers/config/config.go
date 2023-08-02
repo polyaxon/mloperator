@@ -57,9 +57,6 @@ const (
 	// ClusterDomain is the istio tls mode to use
 	ClusterDomain = "POLYAXON_CLUSTER_DOMAIN"
 
-	// ProxyServicesPort port serving services
-	ProxyServicesPort = "POLYAXON_PROXY_SERVICES_PORT"
-
 	// If agent is enabled
 	AgentEnabled = "POLYAXON_SET_AGENT"
 

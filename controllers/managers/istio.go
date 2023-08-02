@@ -61,7 +61,7 @@ func GenerateVirtualService(name, namespace string) (*unstructured.Unstructured,
 					"destination": map[string]interface{}{
 						"host": service,
 						"port": map[string]interface{}{
-							"number": int64(config.GetIntEnv(config.ProxyServicesPort, DefaultServingPort)),
+							"number": int64(DefaultServingPort),
 						},
 					},
 				},
