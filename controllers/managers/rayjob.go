@@ -36,10 +36,10 @@ func generateHeadGroupSpec(replicaSpec operationv1.RayReplicaSpec, name string, 
 	return rayapi.HeadGroupSpec{
 		RayStartParams: GetRayStartParams(replicaSpec.RayStartParams),
 		HeadService: &corev1.Service{
-			ObjectMeta: metav1.ObjectMeta{Labels: l},
+			ObjectMeta: metav1.ObjectMeta{Name: name + "-head", Labels: l},
 		},
 		Template: corev1.PodTemplateSpec{
-			ObjectMeta: metav1.ObjectMeta{Labels: l},
+			ObjectMeta: metav1.ObjectMeta{Name: name + "-head", Labels: l},
 			Spec:       replicaSpec.Template.Spec,
 		},
 	}
@@ -108,6 +108,10 @@ func GenerateRayJob(
 		TTLSecondsAfterFinished:  utils.GetTTL(termination.TTLSecondsAfterFinished),
 		RayClusterSpec:           cluster,
 	}
+	jobStatus := &rayapi.RayJobStatus{
+		JobId:          name,
+		RayClusterName: name,
+	}
 
 	job := &unstructured.Unstructured{}
 	job.SetAPIVersion(kinds.RayAPIVersion)
@@ -117,13 +121,17 @@ func GenerateRayJob(
 	job.SetNamespace(namespace)
 
 	jobManifest, err := runtime.DefaultUnstructuredConverter.ToUnstructured(jobSpec)
+	jobStatusManifest, err := runtime.DefaultUnstructuredConverter.ToUnstructured(jobStatus)
 
 	if err != nil {
 		return nil, fmt.Errorf("Convert rayjob to unstructured error: %v", err)
 	}
 
 	if err := unstructured.SetNestedField(job.Object, jobManifest, "spec"); err != nil {
-		return nil, fmt.Errorf("Set .spec.hosts error: %v", err)
+		return nil, fmt.Errorf("Set .spec error: %v", err)
+	}
+	if err := unstructured.SetNestedField(job.Object, jobStatusManifest, "status"); err != nil {
+		return nil, fmt.Errorf("Set status error: %v", err)
 	}
 
 	return job, nil
