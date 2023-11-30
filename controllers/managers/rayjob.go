@@ -36,10 +36,10 @@ func generateHeadGroupSpec(replicaSpec operationv1.RayReplicaSpec, name string, 
 	return rayapi.HeadGroupSpec{
 		RayStartParams: GetRayStartParams(replicaSpec.RayStartParams),
 		HeadService: &corev1.Service{
-			ObjectMeta: metav1.ObjectMeta{Name: name + "-head", Labels: l},
+			ObjectMeta: metav1.ObjectMeta{Name: name + "-svc", Labels: l},
 		},
 		Template: corev1.PodTemplateSpec{
-			ObjectMeta: metav1.ObjectMeta{Name: name + "-head", Labels: l},
+			ObjectMeta: metav1.ObjectMeta{Name: name + "-svc", Labels: l},
 			Spec:       replicaSpec.Template.Spec,
 		},
 	}
