@@ -25,6 +25,7 @@ func (r *OperationReconciler) reconcileMPIJob(ctx context.Context, instance *ope
 		instance.Name,
 		instance.Namespace,
 		instance.Labels,
+		instance.Annotations,
 		instance.Termination,
 		*instance.MPIJobSpec,
 	)

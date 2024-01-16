@@ -8,16 +8,20 @@ import (
 )
 
 // generateKFReplica generates a new ReplicaSpec
-func generateKFReplica(replicaSpec operationv1.KFReplicaSpec, labels map[string]string) *operationv1.KFReplicaSpec {
+func generateKFReplica(replicaSpec operationv1.KFReplicaSpec, labels map[string]string, annotations map[string]string) *operationv1.KFReplicaSpec {
 	l := make(map[string]string)
 	for k, v := range labels {
 		l[k] = v
+	}
+	a := make(map[string]string)
+	for k, v := range annotations {
+		a[k] = v
 	}
 	return &operationv1.KFReplicaSpec{
 		Replicas:      replicaSpec.Replicas,
 		RestartPolicy: replicaSpec.RestartPolicy,
 		Template: corev1.PodTemplateSpec{
-			ObjectMeta: metav1.ObjectMeta{Labels: l},
+			ObjectMeta: metav1.ObjectMeta{Labels: l, Annotations: a},
 			Spec:       replicaSpec.Template.Spec,
 		},
 	}

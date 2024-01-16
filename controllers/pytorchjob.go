@@ -25,6 +25,7 @@ func (r *OperationReconciler) reconcilePytorchJob(ctx context.Context, instance 
 		instance.Name,
 		instance.Namespace,
 		instance.Labels,
+		instance.Annotations,
 		instance.Termination,
 		*instance.PytorchJobSpec,
 	)

@@ -17,12 +17,13 @@ func GenerateMPIJob(
 	name string,
 	namespace string,
 	labels map[string]string,
+	annotations map[string]string,
 	termination operationv1.TerminationSpec,
 	spec operationv1.MPIJobSpec,
 ) (*unstructured.Unstructured, error) {
 	replicaSpecs := map[operationv1.MPIReplicaType]*operationv1.KFReplicaSpec{}
 	for k, v := range spec.ReplicaSpecs {
-		replicaSpecs[operationv1.MPIReplicaType(k)] = generateKFReplica(v, labels)
+		replicaSpecs[operationv1.MPIReplicaType(k)] = generateKFReplica(v, labels, annotations)
 	}
 
 	jobSpec := &kfapi.MPIJobSpec{

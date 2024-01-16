@@ -17,12 +17,13 @@ func GenerateXGBJob(
 	name string,
 	namespace string,
 	labels map[string]string,
+	annotations map[string]string,
 	termination operationv1.TerminationSpec,
 	spec operationv1.XGBoostJobSpec,
 ) (*unstructured.Unstructured, error) {
 	replicaSpecs := map[operationv1.XGBReplicaType]*operationv1.KFReplicaSpec{}
 	for k, v := range spec.ReplicaSpecs {
-		replicaSpecs[operationv1.XGBReplicaType(k)] = generateKFReplica(v, labels)
+		replicaSpecs[operationv1.XGBReplicaType(k)] = generateKFReplica(v, labels, annotations)
 	}
 
 	jobSpec := &kfapi.XGBoostJobSpec{

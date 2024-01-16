@@ -2,6 +2,7 @@ package v1
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 // This module was copied from kubeflow because
@@ -23,9 +24,11 @@ const (
 // job, for example `minAvailable` for gang-scheduling.
 // +k8s:openapi-gen=true
 type SchedulingPolicy struct {
-	MinAvailable  *int32 `json:"minAvailable,omitempty"`
-	Queue         string `json:"queue,omitempty"`
-	PriorityClass string `json:"priorityClass,omitempty"`
+	MinAvailable           *int32                                     `json:"minAvailable,omitempty"`
+	Queue                  string                                     `json:"queue,omitempty"`
+	MinResources           *map[corev1.ResourceName]resource.Quantity `json:"minResources,omitempty"`
+	PriorityClass          string                                     `json:"priorityClass,omitempty"`
+	ScheduleTimeoutSeconds *int32                                     `json:"scheduleTimeoutSeconds,omitempty"`
 }
 
 // KFReplicaSpec is a description of kubeflow replica

@@ -17,12 +17,13 @@ func GenerateMXJob(
 	name string,
 	namespace string,
 	labels map[string]string,
+	annotations map[string]string,
 	termination operationv1.TerminationSpec,
 	spec operationv1.MXJobSpec,
 ) (*unstructured.Unstructured, error) {
 	replicaSpecs := map[operationv1.MXReplicaType]*operationv1.KFReplicaSpec{}
 	for k, v := range spec.ReplicaSpecs {
-		replicaSpecs[operationv1.MXReplicaType(k)] = generateKFReplica(v, labels)
+		replicaSpecs[operationv1.MXReplicaType(k)] = generateKFReplica(v, labels, annotations)
 	}
 
 	jobSpec := &kfapi.MXJobSpec{

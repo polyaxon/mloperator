@@ -52,10 +52,14 @@ func main() {
 	var debuMode bool
 
 	// Allow to pass by env and override by flag
-	if config.GetStrEnv(config.Namespace, "") != "" {
-		namespace = config.GetStrEnv(config.Namespace, "")
+	if config.GetBoolEnv(config.SingleNamespace, false) {
+		if config.GetStrEnv(config.Namespace, "") != "" {
+			namespace = config.GetStrEnv(config.Namespace, "")
+		} else {
+			namespace = "polyaxon"
+		}
 	} else {
-		namespace = "polyaxon"
+		namespace = ""
 	}
 	if config.GetBoolEnv(config.LeaderElection, false) {
 		leaderElection = true

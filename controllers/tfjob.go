@@ -25,6 +25,7 @@ func (r *OperationReconciler) reconcileTFJob(ctx context.Context, instance *oper
 		instance.Name,
 		instance.Namespace,
 		instance.Labels,
+		instance.Annotations,
 		instance.Termination,
 		*instance.TFJobSpec,
 	)

@@ -28,6 +28,7 @@ func (r *OperationReconciler) reconcileDaskJob(ctx context.Context, instance *op
 		instance.Name,
 		instance.Namespace,
 		instance.Labels,
+		instance.Annotations,
 		instance.Termination,
 		*instance.DaskJobSpec,
 	)

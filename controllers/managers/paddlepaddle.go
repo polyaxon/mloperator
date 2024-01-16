@@ -17,12 +17,13 @@ func GeneratePaddleJob(
 	name string,
 	namespace string,
 	labels map[string]string,
+	annotations map[string]string,
 	termination operationv1.TerminationSpec,
 	spec operationv1.PaddleJobSpec,
 ) (*unstructured.Unstructured, error) {
 	replicaSpecs := map[operationv1.PaddleReplicaType]*operationv1.KFReplicaSpec{}
 	for k, v := range spec.ReplicaSpecs {
-		replicaSpecs[operationv1.PaddleReplicaType(k)] = generateKFReplica(v, labels)
+		replicaSpecs[operationv1.PaddleReplicaType(k)] = generateKFReplica(v, labels, annotations)
 	}
 
 	jobSpec := &kfapi.PaddleJobSpec{
@@ -33,6 +34,7 @@ func GeneratePaddleJob(
 			CleanPodPolicy:          spec.CleanPodPolicy,
 			SchedulingPolicy:        spec.SchedulingPolicy,
 		},
+		ElasticPolicy:      spec.ElasticPolicy,
 		PaddleReplicaSpecs: replicaSpecs,
 	}
 

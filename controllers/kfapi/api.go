@@ -131,12 +131,15 @@ type MPIJobSpec struct {
 // PyTorchJobSpec is a desired state description of the PyTorchJob.
 type PyTorchJobSpec struct {
 	RunPolicy           RunPolicy                                                     `json:"runPolicy,omitempty"`
+	ElasticPolicy       *operationv1.PytorchElasticPolicy                             `json:"elasticPolicy,omitempty"`
+	NprocPerNode        *string                                                       `json:"nprocPerNode,omitempty"`
 	PyTorchReplicaSpecs map[operationv1.PyTorchReplicaType]*operationv1.KFReplicaSpec `json:"pytorchReplicaSpecs"`
 }
 
 // PaddleJobSpec is a desired state description of the TFJob.
 type PaddleJobSpec struct {
 	RunPolicy          RunPolicy                                                    `json:"runPolicy,omitempty"`
+	ElasticPolicy      *operationv1.PaddleElasticPolicy                             `json:"elasticPolicy,omitempty"`
 	PaddleReplicaSpecs map[operationv1.PaddleReplicaType]*operationv1.KFReplicaSpec `json:"paddleReplicaSpecs"`
 }
 
@@ -144,6 +147,7 @@ type PaddleJobSpec struct {
 type TFJobSpec struct {
 	RunPolicy           RunPolicy                                                `json:"runPolicy,omitempty"`
 	EnableDynamicWorker bool                                                     `json:"enableDynamicWorker,omitempty"`
+	SuccessPolicy       *operationv1.TFSuccessPolicy                             `json:"successPolicy,omitempty"`
 	TFReplicaSpecs      map[operationv1.TFReplicaType]*operationv1.KFReplicaSpec `json:"tfReplicaSpecs"`
 }
 

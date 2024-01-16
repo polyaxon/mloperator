@@ -28,6 +28,7 @@ func (r *OperationReconciler) reconcileRayJob(ctx context.Context, instance *ope
 		instance.Name,
 		instance.Namespace,
 		instance.Labels,
+		instance.Annotations,
 		instance.Termination,
 		*instance.RayJobSpec,
 	)

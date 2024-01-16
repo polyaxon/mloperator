@@ -17,12 +17,13 @@ func GenerateTFJob(
 	name string,
 	namespace string,
 	labels map[string]string,
+	annotations map[string]string,
 	termination operationv1.TerminationSpec,
 	spec operationv1.TFJobSpec,
 ) (*unstructured.Unstructured, error) {
 	replicaSpecs := map[operationv1.TFReplicaType]*operationv1.KFReplicaSpec{}
 	for k, v := range spec.ReplicaSpecs {
-		replicaSpecs[operationv1.TFReplicaType(k)] = generateKFReplica(v, labels)
+		replicaSpecs[operationv1.TFReplicaType(k)] = generateKFReplica(v, labels, annotations)
 	}
 
 	jobSpec := &kfapi.TFJobSpec{
@@ -34,6 +35,7 @@ func GenerateTFJob(
 			SchedulingPolicy:        spec.SchedulingPolicy,
 		},
 		EnableDynamicWorker: spec.EnableDynamicWorker,
+		SuccessPolicy:       spec.SuccessPolicy,
 		TFReplicaSpecs:      replicaSpecs,
 	}
 

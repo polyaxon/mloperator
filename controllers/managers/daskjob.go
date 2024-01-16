@@ -13,10 +13,14 @@ import (
 )
 
 // generateHeadGroupSpec generates a new ReplicaSpec
-func generateClusterSpec(worker operationv1.DaskReplicaSpec, scheduler operationv1.DaskReplicaSpec, service corev1.ServiceSpec, labels map[string]string) daskapi.DaskCluster {
+func generateClusterSpec(worker operationv1.DaskReplicaSpec, scheduler operationv1.DaskReplicaSpec, service corev1.ServiceSpec, labels map[string]string, annotations map[string]string) daskapi.DaskCluster {
 	l := make(map[string]string)
 	for k, v := range labels {
 		l[k] = v
+	}
+	a := make(map[string]string)
+	for k, v := range annotations {
+		a[k] = v
 	}
 
 	return daskapi.DaskCluster{
@@ -38,10 +42,11 @@ func GenerateDaskJob(
 	name string,
 	namespace string,
 	labels map[string]string,
+	annotations map[string]string,
 	termination operationv1.TerminationSpec,
 	spec operationv1.DaskJobSpec,
 ) (*unstructured.Unstructured, error) {
-	cluster := generateClusterSpec(spec.ReplicaSpecs[operationv1.DaskReplicaTypeWorker], spec.ReplicaSpecs[operationv1.DaskReplicaTypeScheduler], spec.Service, labels)
+	cluster := generateClusterSpec(spec.ReplicaSpecs[operationv1.DaskReplicaTypeWorker], spec.ReplicaSpecs[operationv1.DaskReplicaTypeScheduler], spec.Service, labels, annotations)
 
 	jobSpec := &daskapi.DaskJobSpec{
 		Job: daskapi.JobSpec{
@@ -54,6 +59,7 @@ func GenerateDaskJob(
 	job.SetAPIVersion(kinds.DaskAPIVersion)
 	job.SetKind(kinds.DaskJobKind)
 	job.SetLabels(labels)
+	job.SetAnnotations(annotations)
 	job.SetName(name)
 	job.SetNamespace(namespace)
 

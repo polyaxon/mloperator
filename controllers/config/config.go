@@ -6,8 +6,11 @@ import (
 )
 
 const (
-	// Namespace is a flag to enable TFJob conroller
+	// Namespace touse
 	Namespace = "POLYAXON_K8S_NAMESPACE"
+
+	// SingleNamespace is a flag to enable watching all namespaces
+	SingleNamespace = "POLYAXON_SINGLE_NAMESPACE"
 
 	// Max concurrent reconciles configuration
 	MaxConcurrentReconciles = "POLYAXON_MAX_CONCURRENT_RECONCILES"
