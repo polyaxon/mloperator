@@ -35,7 +35,7 @@ type RayJobSpec struct {
 	Entrypoint string `json:"entrypoint,omitempty"`
 	// Metadata is data to store along with this job.
 	Metadata map[string]string `json:"metadata,omitempty"`
-	// RuntimeEnv is base64 encoded.
+	// RuntimeEnv yaml representing the runtime environment
 	RuntimeEnv string `json:"runtimeEnv,omitempty"`
 	// RayVersion is the version of ray being used. This determines the autoscaler's image version.
 	RayVersion string `json:"rayVersion,omitempty"`

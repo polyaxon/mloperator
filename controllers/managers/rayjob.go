@@ -107,13 +107,20 @@ func GenerateRayJob(
 		WorkerGroupSpecs: workers,
 	}
 
-	// TODO: Replace shutdownAfterJobFinishes with termination.ActiveDeadlineSeconds
+	var activeDeadlineSeconds int32
+	if termination.ActiveDeadlineSeconds != nil {
+		activeDeadlineSeconds = int32(*termination.ActiveDeadlineSeconds)
+	} else {
+		// Set a default value if necessary
+		activeDeadlineSeconds = 0
+	}
 	jobSpec := &rayapi.RayJobSpec{
 		Entrypoint:               spec.Entrypoint,
 		Metadata:                 spec.Metadata,
-		RuntimeEnv:               spec.RuntimeEnv,
+		RuntimeEnvYAML:           spec.RuntimeEnv,
 		JobId:                    name,
 		ShutdownAfterJobFinishes: true,
+		ActiveDeadlineSeconds:    &activeDeadlineSeconds,
 		TTLSecondsAfterFinished:  utils.GetTTL(termination.TTLSecondsAfterFinished),
 		RayClusterSpec:           cluster,
 	}

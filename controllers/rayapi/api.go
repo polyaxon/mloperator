@@ -153,13 +153,18 @@ type AutoscalerOptions struct {
 type WorkerGroupSpec struct {
 	// we can have multiple worker groups, we distinguish them by name
 	GroupName string `json:"groupName"`
-	// Replicas Number of desired pods in this pod group. This is a pointer to distinguish between explicit
-	// zero and not specified. Defaults to 1.
-	Replicas *int32 `json:"replicas"`
-	// MinReplicas defaults to 1
+	// Replicas is the number of desired Pods for this worker group. See https://github.com/ray-project/kuberay/pull/1443 for more details about the reason for making this field optional.
+	// +kubebuilder:default:=0
+	Replicas *int32 `json:"replicas,omitempty"`
+	// MinReplicas denotes the minimum number of desired Pods for this worker group.
+	// +kubebuilder:default:=0
 	MinReplicas *int32 `json:"minReplicas"`
-	// MaxReplicas defaults to maxInt32
+	// MaxReplicas denotes the maximum number of desired Pods for this worker group, and the default value is maxInt32.
+	// +kubebuilder:default:=2147483647
 	MaxReplicas *int32 `json:"maxReplicas"`
+	// NumOfHosts denotes the number of hosts to create per replica. The default value is 1.
+	// +kubebuilder:default:=1
+	NumOfHosts int32 `json:"numOfHosts,omitempty"`
 	// RayStartParams are the params of the start command: address, object-store-memory, ...
 	RayStartParams map[string]string `json:"rayStartParams"`
 	// Template is a pod template for the worker
@@ -168,18 +173,24 @@ type WorkerGroupSpec struct {
 	ScaleStrategy ScaleStrategy `json:"scaleStrategy,omitempty"`
 }
 
+// RayClusterSpec defines the desired state of RayCluster
 type RayClusterSpec struct {
+	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
 	// HeadGroupSpecs are the spec for the head pod
 	HeadGroupSpec HeadGroupSpec `json:"headGroupSpec"`
 	// WorkerGroupSpecs are the specs for the worker pods
 	WorkerGroupSpecs []WorkerGroupSpec `json:"workerGroupSpecs,omitempty"`
-	// RayVersion is the version of ray being used. This determines the autoscaler's image version.
+	// RayVersion is used to determine the command for the Kubernetes Job managed by RayJob
 	RayVersion string `json:"rayVersion,omitempty"`
 	// EnableInTreeAutoscaling indicates whether operator should create in tree autoscaling configs
 	EnableInTreeAutoscaling *bool `json:"enableInTreeAutoscaling,omitempty"`
 	// AutoscalerOptions specifies optional configuration for the Ray autoscaler.
 	AutoscalerOptions      *AutoscalerOptions `json:"autoscalerOptions,omitempty"`
 	HeadServiceAnnotations map[string]string  `json:"headServiceAnnotations,omitempty"`
+	// Suspend indicates whether a RayCluster should be suspended.
+	// A suspended RayCluster will have head pods and worker pods deleted.
+	Suspend *bool `json:"suspend,omitempty"`
 }
 
 type RayJobSpec struct {
@@ -187,8 +198,9 @@ type RayJobSpec struct {
 	Entrypoint string `json:"entrypoint,omitempty"`
 	// Metadata is data to store along with this job.
 	Metadata map[string]string `json:"metadata,omitempty"`
-	// RuntimeEnv is base64 encoded.
-	RuntimeEnv string `json:"runtimeEnv,omitempty"`
+	// RuntimeEnvYAML represents the runtime environment configuration
+	// provided as a multi-line YAML string.
+	RuntimeEnvYAML string `json:"runtimeEnvYAML,omitempty"`
 	// If jobId is not set, a new jobId will be auto-generated.
 	JobId string `json:"jobId,omitempty"`
 	// ShutdownAfterJobFinishes will determine whether to delete the ray cluster once rayJob succeed or failed.
@@ -196,6 +208,9 @@ type RayJobSpec struct {
 	// TTLSecondsAfterFinished is the TTL to clean up RayCluster.
 	// It's only working when ShutdownAfterJobFinishes set to true.
 	TTLSecondsAfterFinished *int32 `json:"ttlSecondsAfterFinished,omitempty"`
+	// ActiveDeadlineSeconds is the duration in seconds that the RayJob may be active before
+	// KubeRay actively tries to terminate the RayJob; value must be positive integer.
+	ActiveDeadlineSeconds *int32 `json:"activeDeadlineSeconds,omitempty"`
 	// RayClusterSpec is the cluster template to run the job
 	RayClusterSpec *RayClusterSpec `json:"rayClusterSpec,omitempty"`
 	// clusterSelector is used to select running rayclusters by labels

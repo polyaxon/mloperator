@@ -20,7 +20,7 @@ const (
 )
 
 /*
-GetTTL adjusts backoff in way that Polyaxon has timet to finalize the operation
+GetTTL adjusts backoff in way that Polyaxon has time to finalize the operation
 */
 func GetTTL(ttlSecondsAfterFinished *int32) *int32 {
 	jobTtlSecondsAfterFinished := ttlSecondsAfterFinished
