@@ -7,7 +7,7 @@ package v1
 // +k8s:openapi-gen=true
 type TerminationSpec struct {
 	// Specifies the number of retries before marking this job failed.
-	// Defaults to 1
+	// Defaults to 0
 	// +optional
 	BackoffLimit *int32 `json:"backoffLimit,omitempty" default:"1" protobuf:"varint,1,opt,name=backoffLimit"`
 

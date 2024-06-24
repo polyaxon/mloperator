@@ -31,8 +31,8 @@ func (r *OperationReconciler) handleTTL(ctx context.Context, instance *operation
 
 	currentTime := time.Now()
 	ttl := instance.Termination.TTLSecondsAfterFinished
-	zeroTtl := int32(utils.ZeroTTL)
-	if ttl == nil || ttl == &zeroTtl {
+	ZeroValue := int32(utils.ZeroValue)
+	if ttl == nil || ttl == &ZeroValue {
 		// We clean right away
 		return ctrl.Result{}, r.delete(ctx, instance)
 	}

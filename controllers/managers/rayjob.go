@@ -107,12 +107,13 @@ func GenerateRayJob(
 		WorkerGroupSpecs: workers,
 	}
 
-	var activeDeadlineSeconds int32
+	var activeDeadlineSeconds *int32
+
 	if termination.ActiveDeadlineSeconds != nil {
-		activeDeadlineSeconds = int32(*termination.ActiveDeadlineSeconds)
+		value := int32(*termination.ActiveDeadlineSeconds)
+		activeDeadlineSeconds = &value
 	} else {
-		// Set a default value if necessary
-		activeDeadlineSeconds = 0
+		activeDeadlineSeconds = nil
 	}
 	jobSpec := &rayapi.RayJobSpec{
 		Entrypoint:               spec.Entrypoint,
@@ -120,9 +121,10 @@ func GenerateRayJob(
 		RuntimeEnvYAML:           spec.RuntimeEnv,
 		JobId:                    name,
 		ShutdownAfterJobFinishes: true,
-		ActiveDeadlineSeconds:    &activeDeadlineSeconds,
+		ActiveDeadlineSeconds:    activeDeadlineSeconds,
 		TTLSecondsAfterFinished:  utils.GetTTL(termination.TTLSecondsAfterFinished),
 		RayClusterSpec:           cluster,
+		SubmissionMode:           "HTTPMode",
 	}
 	jobStatus := &rayapi.RayJobStatus{
 		JobId:          name,

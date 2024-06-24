@@ -35,7 +35,7 @@ const (
 	DaskJobKind = "DaskJob"
 
 	// RayAPIVersion Ray operator api version
-	RayAPIVersion = "ray.io/v1alpha1"
+	RayAPIVersion = "ray.io/v1"
 
 	// RayJobKind Ray job kind
 	RayJobKind = "RayJob"

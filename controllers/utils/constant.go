@@ -11,8 +11,8 @@ const (
 	DefaultBackoffLimit = 0
 	// DefaultRestartPolicy for Jobs
 	DefaultRestartPolicy = "Never"
-	// ZeroTTL
-	ZeroTTL = 0
+	// ZeroValue
+	ZeroValue = 0
 	// TTLDjustment
 	TTLDjustment = 10
 	// DefaultNumReplicas
@@ -25,7 +25,7 @@ GetTTL adjusts backoff in way that Polyaxon has time to finalize the operation
 func GetTTL(ttlSecondsAfterFinished *int32) *int32 {
 	jobTtlSecondsAfterFinished := ttlSecondsAfterFinished
 	if ttlSecondsAfterFinished == nil {
-		defaultTtl := int32(ZeroTTL + TTLDjustment)
+		defaultTtl := int32(ZeroValue + TTLDjustment)
 		jobTtlSecondsAfterFinished = &defaultTtl
 	} else {
 		newTtl := int32(*ttlSecondsAfterFinished + TTLDjustment)

@@ -193,6 +193,13 @@ type RayClusterSpec struct {
 	Suspend *bool `json:"suspend,omitempty"`
 }
 
+type JobSubmissionMode string
+
+const (
+	K8sJobMode JobSubmissionMode = "K8sJobMode" // Submit job via Kubernetes Job
+	HTTPMode   JobSubmissionMode = "HTTPMode"   // Submit job via HTTP request
+)
+
 type RayJobSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 	Entrypoint string `json:"entrypoint,omitempty"`
@@ -221,6 +228,11 @@ type RayJobSpec struct {
 	// If the RayCluster is already created, it will be deleted.
 	// In case of transition to false a new RayCluster will be created.
 	Suspend bool `json:"suspend,omitempty"`
+	// SubmissionMode specifies how RayJob submits the Ray job to the RayCluster.
+	// In "K8sJobMode", the KubeRay operator creates a submitter Kubernetes Job to submit the Ray job.
+	// In "HTTPMode", the KubeRay operator sends a request to the RayCluster to create a Ray job.
+	// +kubebuilder:default:=K8sJobMode
+	SubmissionMode JobSubmissionMode `json:"submissionMode,omitempty"`
 	// SubmitterPodTemplate is the template for the pod that will run `ray job submit`.
 	SubmitterPodTemplate *corev1.PodTemplateSpec `json:"submitterPodTemplate,omitempty"`
 }
