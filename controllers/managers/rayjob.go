@@ -27,12 +27,20 @@ func GetRayStartParams(rayStartParams map[string]string) map[string]string {
 // generateHeadGroupSpec generates a new ReplicaSpec
 func generateHeadGroupSpec(replicaSpec operationv1.RayReplicaSpec, name string, labels map[string]string, annotations map[string]string) rayapi.HeadGroupSpec {
 	l := make(map[string]string)
+	for k, v := range replicaSpec.Template.Labels {
+		if k != "app.kubernetes.io/name" {
+			l[k] = v
+		}
+	}
 	for k, v := range labels {
 		if k != "app.kubernetes.io/name" {
 			l[k] = v
 		}
 	}
 	a := make(map[string]string)
+	for k, v := range replicaSpec.Template.Annotations {
+		a[k] = v
+	}
 	for k, v := range annotations {
 		a[k] = v
 	}

@@ -36,15 +36,15 @@ type SchedulingPolicy struct {
 type KFReplicaSpec struct {
 	// Replicas is the desired number of replicas of the given template.
 	// If unspecified, defaults to 1.
-	Replicas *int32 `json:"replicas,omitempty"`
+	Replicas *int32 `json:"replicas,omitempty" protobuf:"bytes,1,opt,name=replicas"`
 
 	// Template is the object that describes the pod that
 	// will be created for this replica. RestartPolicy in PodTemplateSpec
 	// will be overide by RestartPolicy in ReplicaSpec
-	Template corev1.PodTemplateSpec `json:"template,omitempty"`
+	Template corev1.PodTemplateSpec `json:"template" protobuf:"bytes,2,opt,name=template"`
 
 	// Restart policy for all replicas within the job.
 	// One of Always, OnFailure, Never and ExitCode.
 	// Default to Never.
-	RestartPolicy corev1.RestartPolicy `json:"restartPolicy,omitempty"`
+	RestartPolicy corev1.RestartPolicy `json:"restartPolicy,omitempty" protobuf:"bytes,3,opt,name=restartPolicy"`
 }
