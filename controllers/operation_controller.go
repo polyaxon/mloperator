@@ -7,13 +7,13 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	operationv1 "github.com/polyaxon/mloperator/api/v1"
 	"github.com/polyaxon/mloperator/controllers/config"
@@ -24,9 +24,10 @@ import (
 // OperationReconciler reconciles a Operation object
 type OperationReconciler struct {
 	client.Client
-	Log       logr.Logger
-	Scheme    *runtime.Scheme
-	Namespace string
+	Log        logr.Logger
+	Scheme     *runtime.Scheme
+	Namespace  string
+	RESTMapper meta.RESTMapper
 }
 
 // +kubebuilder:rbac:groups=core.polyaxon.com,resources=operations,verbs=get;list;watch;create;update;patch;delete
@@ -153,10 +154,10 @@ func (r *OperationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	controllerManager := ctrl.NewControllerManagedBy(mgr).
 		For(&operationv1.Operation{}).
 		WithOptions(controller.Options{MaxConcurrentReconciles: config.GetIntEnv(config.MaxConcurrentReconciles, 1)})
-	controllerManager.Owns(&batchv1.Job{}).Watches(&source.Kind{Type: &corev1.Pod{}},
-		&handler.EnqueueRequestForOwner{OwnerType: &batchv1.Job{}, IsController: true})
-	controllerManager.Owns(&appsv1.Deployment{}).Watches(&source.Kind{Type: &corev1.Pod{}},
-		&handler.EnqueueRequestForOwner{OwnerType: &appsv1.Deployment{}, IsController: true})
+	controllerManager.Owns(&batchv1.Job{}).Watches(&corev1.Pod{},
+		&handler.EnqueueRequestForObject{})
+	controllerManager.Owns(&appsv1.Deployment{}).Watches(&corev1.Pod{},
+		&handler.EnqueueRequestForObject{})
 	controllerManager.Owns(&corev1.Service{})
 
 	if config.GetBoolEnv(config.TFJobEnabled, false) {

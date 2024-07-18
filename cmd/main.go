@@ -18,6 +18,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	// mpijobv1 "github.com/kubeflow/mpi-operator/pkg/apis/kubeflow/v1"
 	// pytorchjobv1 "github.com/kubeflow/pytorch-operator/pkg/apis/pytorch/v1"
@@ -88,13 +89,14 @@ func main() {
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
-		MetricsBindAddress:     metricsAddr,
-		Port:                   9443,
 		HealthProbeBindAddress: probeAddr,
-		LeaderElection:         leaderElection,
-		LeaderElectionID:       "ops.core.polyaxon.com",
-		Namespace:              namespace,
+		Metrics: metricsserver.Options{
+			BindAddress: metricsAddr,
+		},
+		LeaderElection:   leaderElection,
+		LeaderElectionID: "ops.core.polyaxon.com",
 	})
+
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)

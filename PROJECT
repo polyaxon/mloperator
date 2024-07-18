@@ -1,6 +1,6 @@
 domain: polyaxon.com
 layout:
-- go.kubebuilder.io/v3
+- go.kubebuilder.io/v4
 projectName: mloperator
 repo: github.com/polyaxon/mloperator
 resources:
