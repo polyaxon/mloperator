@@ -24,5 +24,5 @@ jobs:
         sudo mv /tmp/kubebuilder /usr/local/kubebuilder
         export PATH=$PATH:/usr/local/kubebuilder/bin
         go version
-        go install
+        make install
         make test
