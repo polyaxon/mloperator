@@ -11,7 +11,7 @@ jobs:
       with:
         go-version: 1.22.0
     - uses: actions/checkout@v4
-    - uses: helm/kind-action@v1.9.0
+    - uses: helm/kind-action@v1
     - name: test
       env:
         KUBEBUILDER_CONTROLPLANE_START_TIMEOUT: 600s
@@ -24,5 +24,5 @@ jobs:
         sudo mv /tmp/kubebuilder /usr/local/kubebuilder
         export PATH=$PATH:/usr/local/kubebuilder/bin
         go version
-        make install
+        go install
         make test
