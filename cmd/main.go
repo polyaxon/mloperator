@@ -16,6 +16,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
@@ -87,7 +88,7 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+	mgrOptions := ctrl.Options{
 		Scheme:                 scheme,
 		HealthProbeBindAddress: probeAddr,
 		Metrics: metricsserver.Options{
@@ -95,7 +96,17 @@ func main() {
 		},
 		LeaderElection:   leaderElection,
 		LeaderElectionID: "ops.core.polyaxon.com",
-	})
+	}
+
+	if namespace != "" {
+		mgrOptions.Cache = cache.Options{
+			DefaultNamespaces: map[string]cache.Config{
+				namespace: {},
+			},
+		}
+	}
+
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), mgrOptions)
 
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
