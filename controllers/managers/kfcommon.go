@@ -10,14 +10,14 @@ import (
 // generateKFReplica generates a new ReplicaSpec
 func generateKFReplica(replicaSpec operationv1.KFReplicaSpec, labels map[string]string, annotations map[string]string) *operationv1.KFReplicaSpec {
 	l := make(map[string]string)
-	for k, v := range replicaSpec.Template.Labels {
+	for k, v := range replicaSpec.Template.GetLabels() {
 		l[k] = v
 	}
 	for k, v := range labels {
 		l[k] = v
 	}
 	a := make(map[string]string)
-	for k, v := range replicaSpec.Template.Annotations {
+	for k, v := range replicaSpec.Template.GetAnnotations() {
 		a[k] = v
 	}
 	for k, v := range annotations {

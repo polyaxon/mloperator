@@ -107,9 +107,18 @@ func (in *MPIJobSpec) DeepCopyInto(out *MPIJobSpec) {
 	}
 	if in.ReplicaSpecs != nil {
 		in, out := &in.ReplicaSpecs, &out.ReplicaSpecs
-		*out = make(map[MPIReplicaType]KFReplicaSpec, len(*in))
+		*out = make(map[MPIReplicaType]*KFReplicaSpec, len(*in))
 		for key, val := range *in {
-			(*out)[key] = *val.DeepCopy()
+			var outVal *KFReplicaSpec
+			if val == nil {
+				(*out)[key] = nil
+			} else {
+				inVal := (*in)[key]
+				in, out := &inVal, &outVal
+				*out = new(KFReplicaSpec)
+				(*in).DeepCopyInto(*out)
+			}
+			(*out)[key] = outVal
 		}
 	}
 }
@@ -139,9 +148,18 @@ func (in *MXJobSpec) DeepCopyInto(out *MXJobSpec) {
 	}
 	if in.ReplicaSpecs != nil {
 		in, out := &in.ReplicaSpecs, &out.ReplicaSpecs
-		*out = make(map[MXReplicaType]KFReplicaSpec, len(*in))
+		*out = make(map[MXReplicaType]*KFReplicaSpec, len(*in))
 		for key, val := range *in {
-			(*out)[key] = *val.DeepCopy()
+			var outVal *KFReplicaSpec
+			if val == nil {
+				(*out)[key] = nil
+			} else {
+				inVal := (*in)[key]
+				in, out := &inVal, &outVal
+				*out = new(KFReplicaSpec)
+				(*in).DeepCopyInto(*out)
+			}
+			(*out)[key] = outVal
 		}
 	}
 }
@@ -400,9 +418,18 @@ func (in *PaddleJobSpec) DeepCopyInto(out *PaddleJobSpec) {
 	}
 	if in.ReplicaSpecs != nil {
 		in, out := &in.ReplicaSpecs, &out.ReplicaSpecs
-		*out = make(map[PaddleReplicaType]KFReplicaSpec, len(*in))
+		*out = make(map[PaddleReplicaType]*KFReplicaSpec, len(*in))
 		for key, val := range *in {
-			(*out)[key] = *val.DeepCopy()
+			var outVal *KFReplicaSpec
+			if val == nil {
+				(*out)[key] = nil
+			} else {
+				inVal := (*in)[key]
+				in, out := &inVal, &outVal
+				*out = new(KFReplicaSpec)
+				(*in).DeepCopyInto(*out)
+			}
+			(*out)[key] = outVal
 		}
 	}
 }
@@ -509,9 +536,18 @@ func (in *PytorchJobSpec) DeepCopyInto(out *PytorchJobSpec) {
 	}
 	if in.ReplicaSpecs != nil {
 		in, out := &in.ReplicaSpecs, &out.ReplicaSpecs
-		*out = make(map[PyTorchReplicaType]KFReplicaSpec, len(*in))
+		*out = make(map[PyTorchReplicaType]*KFReplicaSpec, len(*in))
 		for key, val := range *in {
-			(*out)[key] = *val.DeepCopy()
+			var outVal *KFReplicaSpec
+			if val == nil {
+				(*out)[key] = nil
+			} else {
+				inVal := (*in)[key]
+				in, out := &inVal, &outVal
+				*out = new(KFReplicaSpec)
+				(*in).DeepCopyInto(*out)
+			}
+			(*out)[key] = outVal
 		}
 	}
 	if in.NprocPerNode != nil {
@@ -696,9 +732,18 @@ func (in *TFJobSpec) DeepCopyInto(out *TFJobSpec) {
 	}
 	if in.ReplicaSpecs != nil {
 		in, out := &in.ReplicaSpecs, &out.ReplicaSpecs
-		*out = make(map[TFReplicaType]KFReplicaSpec, len(*in))
+		*out = make(map[TFReplicaType]*KFReplicaSpec, len(*in))
 		for key, val := range *in {
-			(*out)[key] = *val.DeepCopy()
+			var outVal *KFReplicaSpec
+			if val == nil {
+				(*out)[key] = nil
+			} else {
+				inVal := (*in)[key]
+				in, out := &inVal, &outVal
+				*out = new(KFReplicaSpec)
+				(*in).DeepCopyInto(*out)
+			}
+			(*out)[key] = outVal
 		}
 	}
 }
@@ -758,9 +803,18 @@ func (in *XGBoostJobSpec) DeepCopyInto(out *XGBoostJobSpec) {
 	}
 	if in.ReplicaSpecs != nil {
 		in, out := &in.ReplicaSpecs, &out.ReplicaSpecs
-		*out = make(map[XGBReplicaType]KFReplicaSpec, len(*in))
+		*out = make(map[XGBReplicaType]*KFReplicaSpec, len(*in))
 		for key, val := range *in {
-			(*out)[key] = *val.DeepCopy()
+			var outVal *KFReplicaSpec
+			if val == nil {
+				(*out)[key] = nil
+			} else {
+				inVal := (*in)[key]
+				in, out := &inVal, &outVal
+				*out = new(KFReplicaSpec)
+				(*in).DeepCopyInto(*out)
+			}
+			(*out)[key] = outVal
 		}
 	}
 }

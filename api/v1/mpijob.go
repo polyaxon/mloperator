@@ -18,7 +18,7 @@ type MPIJobSpec struct {
 
 	// `MPIReplicaSpecs` contains maps from `MPIReplicaType` to `ReplicaSpec` that
 	// specify the MPI replicas to run.
-	ReplicaSpecs map[MPIReplicaType]KFReplicaSpec `json:"replicaSpecs" protobuf:"bytes,6,opt,name=replicaSpecs"`
+	ReplicaSpecs map[MPIReplicaType]*KFReplicaSpec `json:"replicaSpecs" protobuf:"bytes,6,opt,name=replicaSpecs"`
 }
 
 // MPIReplicaType is the type for MPIReplica.

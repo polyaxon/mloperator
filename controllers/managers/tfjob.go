@@ -23,7 +23,7 @@ func GenerateTFJob(
 ) (*unstructured.Unstructured, error) {
 	replicaSpecs := map[operationv1.TFReplicaType]*operationv1.KFReplicaSpec{}
 	for k, v := range spec.ReplicaSpecs {
-		replicaSpecs[operationv1.TFReplicaType(k)] = generateKFReplica(v, labels, annotations)
+		replicaSpecs[operationv1.TFReplicaType(k)] = generateKFReplica(*v, labels, annotations)
 	}
 
 	jobSpec := &kfapi.TFJobSpec{

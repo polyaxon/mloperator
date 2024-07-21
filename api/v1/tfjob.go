@@ -25,7 +25,7 @@ type TFJobSpec struct {
 	//     "PS": ReplicaSpec,
 	//     "Worker": ReplicaSpec,
 	//   }
-	ReplicaSpecs map[TFReplicaType]KFReplicaSpec `json:"replicaSpecs" protobuf:"bytes,5,opt,name=replicaSpecs"`
+	ReplicaSpecs map[TFReplicaType]*KFReplicaSpec `json:"replicaSpecs" protobuf:"bytes,5,opt,name=replicaSpecs"`
 }
 
 // SuccessPolicy is the success policy.

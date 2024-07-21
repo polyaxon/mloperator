@@ -17,7 +17,7 @@ type XGBoostJobSpec struct {
 	//     "Master": ReplicaSpec,
 	//     "Worker": ReplicaSpec,
 	//   }
-	ReplicaSpecs map[XGBReplicaType]KFReplicaSpec `json:"replicaSpecs" protobuf:"bytes,3,opt,name=replicaSpecs"`
+	ReplicaSpecs map[XGBReplicaType]*KFReplicaSpec `json:"replicaSpecs" protobuf:"bytes,3,opt,name=replicaSpecs"`
 }
 
 // TFReplicaType is the type for TFReplica. Can be one of: "Chief"/"Master" (semantically equivalent),

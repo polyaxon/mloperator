@@ -22,7 +22,7 @@ type MXJobSpec struct {
 	//     "Master": ReplicaSpec,
 	//     "Worker": ReplicaSpec,
 	//   }
-	ReplicaSpecs map[MXReplicaType]KFReplicaSpec `json:"replicaSpecs" protobuf:"bytes,4,opt,name=replicaSpecs"`
+	ReplicaSpecs map[MXReplicaType]*KFReplicaSpec `json:"replicaSpecs" protobuf:"bytes,4,opt,name=replicaSpecs"`
 }
 
 // MXReplicaType is the type for MXReplica. Can be one of "Master" or "Worker".

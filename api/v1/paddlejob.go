@@ -24,7 +24,7 @@ type PaddleJobSpec struct {
 	//     "Master": ReplicaSpec,
 	//     "Worker": ReplicaSpec,
 	//   }
-	ReplicaSpecs map[PaddleReplicaType]KFReplicaSpec `json:"replicaSpecs" protobuf:"bytes,4,opt,name=replicaSpecs"`
+	ReplicaSpecs map[PaddleReplicaType]*KFReplicaSpec `json:"replicaSpecs" protobuf:"bytes,4,opt,name=replicaSpecs"`
 }
 
 type PaddleElasticPolicy struct {
