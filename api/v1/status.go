@@ -21,10 +21,10 @@ type OperationStatus struct {
 	// Represents the time when the job was completed. It is not guaranteed to
 	// be set in happens-before order across separate operations.
 	// It is represented in RFC3339 form and is in UTC.
-	CompletionTime *metav1.Time `json:"completionTime,omitempty" protobuf:"bytes,3,opt,name=startTime"`
+	CompletionTime *metav1.Time `json:"completionTime,omitempty" protobuf:"bytes,3,opt,name=completionTime"`
 
 	// Represents the last time when the job was reconciled.
 	// It is not guaranteed to be set in happens-before order across separate operations.
 	// It is represented in RFC3339 form and is in UTC.
-	LastReconcileTime *metav1.Time `json:"lastReconcileTime,omitempty" protobuf:"bytes,4,opt,name=startTime"`
+	LastReconcileTime *metav1.Time `json:"lastReconcileTime,omitempty" protobuf:"bytes,4,opt,name=lastReconcileTime"`
 }
