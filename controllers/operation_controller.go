@@ -81,20 +81,28 @@ func (r *OperationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	// Finalizer
 	if instance.IsBeingDeleted() {
+		log.V(1).Info("Operation is being deleted, remove finalizers")
 		return ctrl.Result{}, r.handleFinalizers(ctx, instance)
+	} else if instance.IsDone() {
+		log.V(1).Info("Instance is done", "CompletionTime", instance.Status.CompletionTime, "IsBeingDeleted", instance.IsBeingDeleted())
+		if err := r.handleFinalizers(ctx, instance); err != nil {
+			return ctrl.Result{}, err
+		}
+		log.V(1).Info("Cleaning up operation")
+		return r.cleanUpOperation(ctx, instance)
 	} else if !instance.HasLogsFinalizer() {
+		log.V(1).Info("Adding logs finalizer", "IsDone", instance.IsDone())
 		if err := r.AddLogsFinalizer(ctx, instance); err != nil {
 			return ctrl.Result{}, err
 		}
 	} else if !instance.HasNotificationsFinalizer() {
+		log.V(1).Info("Adding notifications finalizer", "IsDone", instance.IsDone())
 		if err := r.AddNotificationsFinalizer(ctx, instance); err != nil {
 			return ctrl.Result{}, err
 		}
-	} else if instance.IsDone() {
-		return r.cleanUpOperation(ctx, instance)
 	}
 
-	// Reconcile the underlaying runtime
+	// Reconcile the underlying runtime
 	return r.reconcileOperation(ctx, instance)
 }
 

@@ -60,11 +60,12 @@ func (r *OperationReconciler) reconcileJob(ctx context.Context, instance *operat
 		instance.LogStarting()
 		err = r.Status().Update(ctx, instance)
 		r.instanceSyncStatus(instance)
-	} else if err != nil {
+	}
+	if err != nil {
 		return err
 	}
 	// Update the job object and write the result back if there are any changes
-	if !justCreated && !instance.IsDone() && managers.CopyJobFields(job, foundJob) {
+	if !justCreated && !instance.IsDone() && !instance.IsBeingDeleted() && managers.CopyJobFields(job, foundJob) {
 		log.V(1).Info("Updating Job", "namespace", job.Namespace, "name", job.Name)
 		err = r.Update(ctx, foundJob)
 		if err != nil {
