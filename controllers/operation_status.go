@@ -19,5 +19,5 @@ func (r *OperationReconciler) AddStartTime(ctx context.Context, instance *operat
 
 	log.V(1).Info("Setting StartTime", "Operation", instance.Name)
 	instance.Status.StartTime = &now
-	return r.Update(ctx, instance)
+	return r.Status().Update(ctx, instance)
 }
