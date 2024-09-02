@@ -1,21 +1,25 @@
 package v1
 
+import (
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+)
+
 // OperationLogsFinalizer registration
 const OperationLogsFinalizer = "operation.logs.finalizers.polyaxon.com"
 
 // HasLogsFinalizer check for Operation
 func (instance *Operation) HasLogsFinalizer() bool {
-	return containsString(instance.ObjectMeta.Finalizers, OperationLogsFinalizer)
+	return controllerutil.ContainsFinalizer(instance, OperationLogsFinalizer)
 }
 
 // AddLogsFinalizer handler for Operation
 func (instance *Operation) AddLogsFinalizer() {
-	instance.ObjectMeta.Finalizers = append(instance.ObjectMeta.Finalizers, OperationLogsFinalizer)
+	controllerutil.AddFinalizer(instance, OperationLogsFinalizer)
 }
 
 // RemoveLogsFinalizer handler for Operation
 func (instance *Operation) RemoveLogsFinalizer() {
-	instance.ObjectMeta.Finalizers = removeString(instance.ObjectMeta.Finalizers, OperationLogsFinalizer)
+	controllerutil.RemoveFinalizer(instance, OperationLogsFinalizer)
 }
 
 // OperationNotificationsFinalizer registration
@@ -23,15 +27,15 @@ const OperationNotificationsFinalizer = "operation.notifications.finalizers.poly
 
 // HasNotificationsFinalizer check for Operation
 func (instance *Operation) HasNotificationsFinalizer() bool {
-	return containsString(instance.ObjectMeta.Finalizers, OperationNotificationsFinalizer)
+	return controllerutil.ContainsFinalizer(instance, OperationNotificationsFinalizer)
 }
 
 // AddNotificationsFinalizer handler for Operation
 func (instance *Operation) AddNotificationsFinalizer() {
-	instance.ObjectMeta.Finalizers = append(instance.ObjectMeta.Finalizers, OperationNotificationsFinalizer)
+	controllerutil.AddFinalizer(instance, OperationNotificationsFinalizer)
 }
 
 // RemoveNotificationsFinalizer handler for Operation
 func (instance *Operation) RemoveNotificationsFinalizer() {
-	instance.ObjectMeta.Finalizers = removeString(instance.ObjectMeta.Finalizers, OperationNotificationsFinalizer)
+	controllerutil.RemoveFinalizer(instance, OperationNotificationsFinalizer)
 }
