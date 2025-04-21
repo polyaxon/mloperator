@@ -7,14 +7,10 @@ const (
 	DefaultBackOff = 10 * time.Second
 	// MaxBackOff is the max backoff period, exported for the e2e test
 	MaxBackOff = 360 * time.Second
-	// DefaultBackoffLimit for Jobs
-	DefaultBackoffLimit = 0
 	// DefaultRestartPolicy for Jobs
 	DefaultRestartPolicy = "Never"
 	// ZeroValue
 	ZeroValue = 0
-	// TTLDjustment
-	TTLDjustment = 10
 	// DefaultNumReplicas
 	DefaultNumReplicas = 1
 )
@@ -25,11 +21,8 @@ GetTTL adjusts backoff in way that Polyaxon has time to finalize the operation
 func GetTTL(ttlSecondsAfterFinished *int32) *int32 {
 	jobTtlSecondsAfterFinished := ttlSecondsAfterFinished
 	if ttlSecondsAfterFinished == nil {
-		defaultTtl := int32(ZeroValue + TTLDjustment)
+		defaultTtl := int32(ZeroValue)
 		jobTtlSecondsAfterFinished = &defaultTtl
-	} else {
-		newTtl := int32(*ttlSecondsAfterFinished + TTLDjustment)
-		jobTtlSecondsAfterFinished = &newTtl
 	}
 	return jobTtlSecondsAfterFinished
 }
@@ -40,7 +33,7 @@ GetBackoffLimit utils function to handle default case
 func GetBackoffLimit(backoffLimit *int32) *int32 {
 	jobBackoffLimit := backoffLimit
 	if backoffLimit == nil {
-		defaultBackoffLimit := int32(DefaultBackoffLimit)
+		defaultBackoffLimit := int32(ZeroValue)
 		jobBackoffLimit = &defaultBackoffLimit
 	}
 	return jobBackoffLimit
