@@ -39,8 +39,6 @@ func (r *OperationReconciler) handleFinalizers(ctx context.Context, instance *op
 	if instance.HasLogsFinalizer() {
 		if err := r.collectLogs(instance); err != nil {
 			log.Info("Error logs collection", "Error", err.Error())
-			// TODO: add better error handling
-			return nil
 		}
 
 		instance.RemoveLogsFinalizer()
@@ -50,8 +48,6 @@ func (r *OperationReconciler) handleFinalizers(ctx context.Context, instance *op
 	if instance.HasNotificationsFinalizer() {
 		if err := r.notify(instance); err != nil {
 			log.Info("Error notification", "Error", err.Error())
-			// TODO: add better error handling
-			return nil
 		}
 
 		instance.RemoveNotificationsFinalizer()
