@@ -69,6 +69,7 @@ func (r *OperationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	instance := &operationv1.Operation{}
 	if err := r.Get(ctx, req.NamespacedName, instance); err != nil {
 		log.V(1).Info("unable to fetch Operation", "err", err)
+		// TODO: add check for backend status
 		return ctrl.Result{}, utils.IgnoreNotFound(err)
 	}
 
