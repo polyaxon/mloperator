@@ -14,9 +14,9 @@ func (r *OperationReconciler) AddLogsFinalizer(ctx context.Context, instance *op
 	return r.Update(ctx, instance)
 }
 
-// AddNotificationsFinalizer Adds finalizer by the reconciler
-func (r *OperationReconciler) AddNotificationsFinalizer(ctx context.Context, instance *operationv1.Operation) error {
-	instance.AddNotificationsFinalizer()
+// AddStatusFinalizer Adds finalizer by the reconciler
+func (r *OperationReconciler) AddStatusFinalizer(ctx context.Context, instance *operationv1.Operation) error {
+	instance.AddStatusFinalizer()
 	return r.Update(ctx, instance)
 }
 
@@ -47,14 +47,8 @@ func (r *OperationReconciler) handleFinalizers(ctx context.Context, instance *op
 		return r.Update(ctx, instance)
 	}
 
-	if instance.HasNotificationsFinalizer() {
-		if err := r.notify(instance); err != nil {
-			log.Info("Error notification", "Error", err.Error())
-			// TODO: add better error handling
-			return nil
-		}
-
-		instance.RemoveNotificationsFinalizer()
+	if instance.HasStatusFinalizer() {
+		instance.RemoveStatusFinalizer()
 		return r.Update(ctx, instance)
 	}
 

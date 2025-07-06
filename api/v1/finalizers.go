@@ -22,20 +22,20 @@ func (instance *Operation) RemoveLogsFinalizer() {
 	controllerutil.RemoveFinalizer(instance, OperationLogsFinalizer)
 }
 
-// OperationNotificationsFinalizer registration
-const OperationNotificationsFinalizer = "operation.notifications.finalizers.polyaxon.com"
+// OperationStatusFinalizer registration (this holds the operation until it is fully deleted)
+const OperationStatusFinalizer = "operation.status.finalizers.polyaxon.com"
 
-// HasNotificationsFinalizer check for Operation
-func (instance *Operation) HasNotificationsFinalizer() bool {
-	return controllerutil.ContainsFinalizer(instance, OperationNotificationsFinalizer)
+// HasStatusFinalizer check for Operation
+func (instance *Operation) HasStatusFinalizer() bool {
+	return controllerutil.ContainsFinalizer(instance, OperationStatusFinalizer)
 }
 
-// AddNotificationsFinalizer handler for Operation
-func (instance *Operation) AddNotificationsFinalizer() {
-	controllerutil.AddFinalizer(instance, OperationNotificationsFinalizer)
+// AddStatusFinalizer handler for Operation
+func (instance *Operation) AddStatusFinalizer() {
+	controllerutil.AddFinalizer(instance, OperationStatusFinalizer)
 }
 
-// RemoveNotificationsFinalizer handler for Operation
-func (instance *Operation) RemoveNotificationsFinalizer() {
-	controllerutil.RemoveFinalizer(instance, OperationNotificationsFinalizer)
+// RemoveStatusFinalizer handler for Operation
+func (instance *Operation) RemoveStatusFinalizer() {
+	controllerutil.RemoveFinalizer(instance, OperationStatusFinalizer)
 }

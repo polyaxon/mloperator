@@ -91,15 +91,19 @@ func (r *OperationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		}
 		log.V(1).Info("Cleaning up operation")
 		return r.cleanUpOperation(ctx, instance)
-	} else if config.GetBoolEnv(config.EnableFinalizers, false) {
+	} else if config.GetBoolEnv(config.EnableLogsFinalizers, false) {
 		if !instance.HasLogsFinalizer() {
 			log.V(1).Info("Adding logs finalizer", "IsDone", instance.IsDone())
 			if err := r.AddLogsFinalizer(ctx, instance); err != nil {
 				return ctrl.Result{}, err
 			}
-		} else if !instance.HasNotificationsFinalizer() {
-			log.V(1).Info("Adding notifications finalizer", "IsDone", instance.IsDone())
-			if err := r.AddNotificationsFinalizer(ctx, instance); err != nil {
+		}
+	}
+
+	if config.GetBoolEnv(config.EnableStatusFinalizers, false) {
+		if !instance.HasStatusFinalizer() {
+			log.V(1).Info("Adding status finalizer", "IsDone", instance.IsDone())
+			if err := r.AddStatusFinalizer(ctx, instance); err != nil {
 				return ctrl.Result{}, err
 			}
 		}

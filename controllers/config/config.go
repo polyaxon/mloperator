@@ -66,8 +66,11 @@ const (
 	// Log level
 	LogLevel = "POLYAXON_LOG_LEVEL"
 
-	// EnableFinalizers to use finalizer
-	EnableFinalizers = "POLYAXON_ENABLE_FINALIZERS"
+	// EnableStatusFinalizers to use finalizer
+	EnableStatusFinalizers = "POLYAXON_ENABLE_STATUS_FINALIZERS"
+
+	// EnableLogsFinalizers to use logs finalizer
+	EnableLogsFinalizers = "POLYAXON_ENABLE_LOGS_FINALIZERS"
 )
 
 // GetStrEnv returns an environment str variable given by key or return a default value.

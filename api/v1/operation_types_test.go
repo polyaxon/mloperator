@@ -90,14 +90,14 @@ var _ = Describe("Operation", func() {
 			}
 			Expect(op.IsBeingDeleted()).To(BeTrue())
 
-			op.AddNotificationsFinalizer()
+			op.AddStatusFinalizer()
 			Expect(len(op.GetFinalizers())).To(Equal(1))
-			Expect(op.HasNotificationsFinalizer()).To(BeTrue())
-			Expect(containsString(op.ObjectMeta.Finalizers, OperationNotificationsFinalizer)).To(BeTrue())
+			Expect(op.HasStatusFinalizer()).To(BeTrue())
+			Expect(containsString(op.ObjectMeta.Finalizers, OperationStatusFinalizer)).To(BeTrue())
 
-			op.RemoveNotificationsFinalizer()
+			op.RemoveStatusFinalizer()
 			Expect(len(op.GetFinalizers())).To(Equal(0))
-			Expect(op.HasNotificationsFinalizer()).To(BeFalse())
+			Expect(op.HasStatusFinalizer()).To(BeFalse())
 		})
 
 		It("should correctly handle both finalizers", func() {
@@ -111,15 +111,15 @@ var _ = Describe("Operation", func() {
 			Expect(op.IsBeingDeleted()).To(BeTrue())
 
 			op.AddLogsFinalizer()
-			op.AddNotificationsFinalizer()
+			op.AddStatusFinalizer()
 			Expect(len(op.GetFinalizers())).To(Equal(2))
-			Expect(op.HasNotificationsFinalizer()).To(BeTrue())
+			Expect(op.HasStatusFinalizer()).To(BeTrue())
 			Expect(op.HasLogsFinalizer()).To(BeTrue())
 
-			op.RemoveNotificationsFinalizer()
+			op.RemoveStatusFinalizer()
 			op.RemoveLogsFinalizer()
 			Expect(len(op.GetFinalizers())).To(Equal(0))
-			Expect(op.HasNotificationsFinalizer()).To(BeFalse())
+			Expect(op.HasStatusFinalizer()).To(BeFalse())
 			Expect(op.HasLogsFinalizer()).To(BeFalse())
 		})
 
