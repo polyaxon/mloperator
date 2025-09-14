@@ -136,12 +136,6 @@ type PyTorchJobSpec struct {
 	PyTorchReplicaSpecs map[operationv1.PyTorchReplicaType]*operationv1.KFReplicaSpec `json:"pytorchReplicaSpecs"`
 }
 
-// PaddleJobSpec is a desired state description of the TFJob.
-type PaddleJobSpec struct {
-	RunPolicy          RunPolicy                                                    `json:"runPolicy,omitempty"`
-	ElasticPolicy      *operationv1.PaddleElasticPolicy                             `json:"elasticPolicy,omitempty"`
-	PaddleReplicaSpecs map[operationv1.PaddleReplicaType]*operationv1.KFReplicaSpec `json:"paddleReplicaSpecs"`
-}
 
 // TFJobSpec is a desired state description of the TFJob.
 type TFJobSpec struct {
@@ -149,17 +143,4 @@ type TFJobSpec struct {
 	EnableDynamicWorker bool                                                     `json:"enableDynamicWorker,omitempty"`
 	SuccessPolicy       *operationv1.TFSuccessPolicy                             `json:"successPolicy,omitempty"`
 	TFReplicaSpecs      map[operationv1.TFReplicaType]*operationv1.KFReplicaSpec `json:"tfReplicaSpecs"`
-}
-
-// MXJobSpec is a desired state description of the MXNetJob.
-type MXJobSpec struct {
-	RunPolicy      RunPolicy                                                `json:"runPolicy,omitempty"`
-	JobMode        operationv1.MXJobModeType                                `json:"jobMode,omitempty"`
-	MXReplicaSpecs map[operationv1.MXReplicaType]*operationv1.KFReplicaSpec `json:"mxReplicaSpecs"`
-}
-
-// XGBoostJobSpec is a desired state description of the XGBoostJob.
-type XGBoostJobSpec struct {
-	RunPolicy       RunPolicy                                                 `json:"runPolicy,omitempty"`
-	XGBReplicaSpecs map[operationv1.XGBReplicaType]*operationv1.KFReplicaSpec `json:"xgbReplicaSpecs"`
 }

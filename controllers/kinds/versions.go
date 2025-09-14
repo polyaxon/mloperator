@@ -13,15 +13,6 @@ const (
 	// PytorchJobKind kind
 	PytorchJobKind = "PyTorchJob"
 
-	// MXJobKind kind
-	MXJobKind = "MXJob"
-
-	// PaddleJobKind kind
-	PaddleJobKind = "PaddleJob"
-
-	// XGBoostJobKind tfjob kind
-	XGBoostJobKind = "XGBoostJob"
-
 	// IstioAPIVersion istio networing api version
 	IstioAPIVersion = "networking.istio.io/v1alpha3"
 

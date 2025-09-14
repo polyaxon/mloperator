@@ -24,17 +24,8 @@ const (
 	// PytorchJobEnabled is a flag to enable PytorchJob conroller
 	PytorchJobEnabled = "POLYAXON_PYTORCH_JOB_ENABLED"
 
-	// PaddleJobEnabled is a flag to enable PaddleJob conroller
-	PaddleJobEnabled = "POLYAXON_PADDLE_JOB_ENABLED"
-
 	// MPIJobEnabled is a flag to enable MPIJob conroller
 	MPIJobEnabled = "POLYAXON_MPIJOB_ENABLED"
-
-	// MXJobEnabled is a flag to enable MPIJob conroller
-	MXJobEnabled = "POLYAXON_MXJOB_ENABLED"
-
-	// XGBoostJobEnabled is a flag to enable MPIJob conroller
-	XGBoostJobEnabled = "POLYAXON_XGBOOST_JOB_ENABLED"
 
 	// RayJobEnabled is a flag to enable Ray conroller
 	DaskJobEnabled = "POLYAXON_DASK_JOB_ENABLED"

@@ -44,15 +44,6 @@ type Operation struct {
 	// Specification of the desired behavior of a PytorchJob.
 	PytorchJobSpec *PytorchJobSpec `json:"pytorchJobSpec,omitempty" protobuf:"bytes,9,opt,name=pytorchJobSpec"`
 
-	// Specification of the desired behavior of a PaddleJob.
-	PaddleJobSpec *PaddleJobSpec `json:"paddleJobSpec,omitempty" protobuf:"bytes,10,opt,name=paddleJobSpec"`
-
-	// Specification of the desired behavior of a MXJob.
-	MXJobSpec *MXJobSpec `json:"mxJobSpec,omitempty" protobuf:"bytes,11,opt,name=mxJobSpec"`
-
-	// Specification of the desired behavior of a XGBoostJob.
-	XGBoostJobSpec *XGBoostJobSpec `json:"xgboostJobSpec,omitempty" protobuf:"bytes,12,opt,name=xgboostJobSpec"`
-
 	// Specification of the desired behavior of a MPIJob.
 	MPIJobSpec *MPIJobSpec `json:"mpiJobSpec,omitempty" protobuf:"bytes,13,opt,name=mpiJobSpec"`
 
