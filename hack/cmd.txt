@@ -2,6 +2,11 @@ go mod init github.com/polyaxon/mloperator
 
 kubebuilder init --domain polyaxon.com --owner="Polyaxon, Inc" --license=apache2
 
-kubebuilder create api --group core --version v1 --kind PolyaxonKind
+kubebuilder create api --group core --version v1 --kind Operation
 
 make manifest
+
+# New
+kubebuilder init --domain polyaxon.com --repo github.com/polyaxon/mloperator --owner="Polyaxon, Inc" --license=apache2
+
+kubebuilder create api --group core --version v1 --kind Operation
