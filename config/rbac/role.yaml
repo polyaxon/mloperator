@@ -7,6 +7,14 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - events
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
   - pods
   - services
   verbs:
@@ -67,32 +75,6 @@ rules:
   - patch
   - update
 - apiGroups:
-  - core.polyaxon.com
-  resources:
-  - operations
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - core.polyaxon.com
-  resources:
-  - operations/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - core.polyaxon.com
-  resources:
-  - operations/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
   - kubeflow.org
   resources:
   - mpijobs
@@ -119,7 +101,7 @@ rules:
 - apiGroups:
   - kubernetes.dask.org
   resources:
-  - daskjobs
+  - daskclusters
   verbs:
   - create
   - delete
@@ -131,7 +113,7 @@ rules:
 - apiGroups:
   - kubernetes.dask.org
   resources:
-  - daskjobs/status
+  - daskclusters/status
   verbs:
   - get
   - patch
@@ -159,9 +141,44 @@ rules:
   - patch
   - update
 - apiGroups:
+  - polyaxon.com
+  resources:
+  - clusters
+  - jobs
+  - kfjobs
+  - services
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - polyaxon.com
+  resources:
+  - clusters/finalizers
+  - jobs/finalizers
+  - kfjobs/finalizers
+  - services/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - polyaxon.com
+  resources:
+  - clusters/status
+  - jobs/status
+  - kfjobs/status
+  - services/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - ray.io
   resources:
-  - rayjobs
+  - rayclusters
   verbs:
   - create
   - delete
@@ -173,7 +190,7 @@ rules:
 - apiGroups:
   - ray.io
   resources:
-  - rayjobs/status
+  - rayclusters/status
   verbs:
   - get
   - patch

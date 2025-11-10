@@ -1,0 +1,47 @@
+apiVersion: polyaxon.com/v1
+kind: Cluster
+metadata:
+  name: ray-cluster-minimal
+  namespace: polyaxon-agent
+rayClusterSpec:
+  rayVersion: '2.46.0'
+  head:
+    rayStartParams:
+      dashboard-host: "0.0.0.0"
+    template:
+      spec:
+        containers:
+        - name: ray-head
+          image: rayproject/ray:2.46.0
+          ports:
+          - containerPort: 6379
+            name: gcs-server
+          - containerPort: 8265
+            name: dashboard
+          - containerPort: 10001
+            name: client
+          resources:
+            limits:
+              cpu: "1"
+              memory: 2Gi
+            requests:
+              cpu: 500m
+              memory: 1Gi
+  workers:
+  - groupName: worker-group
+    replicas: 1
+    minReplicas: 1
+    maxReplicas: 3
+    rayStartParams: {}
+    template:
+      spec:
+        containers:
+        - name: ray-worker
+          image: rayproject/ray:2.46.0
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi
+            requests:
+              cpu: 500m
+              memory: 512Mi

@@ -22,5 +22,6 @@ type ServiceSpec struct {
 	IsExternal bool `json:"isExternal,omitempty" protobuf:"varint,3,rep,name=IsExternal"`
 
 	// Template describes the pods that will be created.
+	// +kubebuilder:pruning:PreserveUnknownFields
 	Template corev1.PodTemplateSpec `json:"template" protobuf:"bytes,4,opt,name=template"`
 }

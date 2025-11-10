@@ -1,7 +1,7 @@
 # This rule is not used by the project mloperator itself.
 # It is provided to allow the cluster admin to help manage permissions for users.
 #
-# Grants permissions to create, update, and delete resources within the core.polyaxon.com.
+# Grants permissions to create, update, and delete resources within the polyaxon.com.
 # This role is intended for users who need to manage these resources
 # but should not control RBAC or manage permissions for others.
 
@@ -14,9 +14,12 @@ metadata:
   name: operation-editor-role
 rules:
 - apiGroups:
-  - core.polyaxon.com
+  - polyaxon.com
   resources:
-  - operations
+  - clusters
+  - jobs
+  - kfjobs
+  - services
   verbs:
   - create
   - delete
@@ -26,8 +29,11 @@ rules:
   - update
   - watch
 - apiGroups:
-  - core.polyaxon.com
+  - polyaxon.com
   resources:
-  - operations/status
+  - clusters/finalizers
+  - jobs/finalizers
+  - kfjobs/finalizers
+  - services/finalizers
   verbs:
   - get

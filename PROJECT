@@ -3,20 +3,47 @@
 # and allow the plugins properly work.
 # More info: https://book.kubebuilder.io/reference/project-config.html
 cliVersion: 4.8.0
-domain: polyaxon.com
+domain: com
 layout:
-- go.kubebuilder.io/v4
+  - go.kubebuilder.io/v4
 multigroup: true
 projectName: mloperator
 repo: github.com/polyaxon/mloperator
 resources:
-- api:
-    crdVersion: v1
-    namespaced: true
-  controller: true
-  domain: polyaxon.com
-  group: core
-  kind: Operation
-  path: github.com/polyaxon/mloperator/api/v1
-  version: v1
+  - api:
+      crdVersion: v1
+      namespaced: true
+    controller: true
+    domain: com
+    group: polyaxon
+    kind: Job
+    path: github.com/polyaxon/mloperator/api/v1
+    version: v1
+  - api:
+      crdVersion: v1
+      namespaced: true
+    controller: true
+    domain: com
+    group: polyaxon
+    kind: Service
+    path: github.com/polyaxon/mloperator/api/v1
+    version: v1
+  - api:
+      crdVersion: v1
+      namespaced: true
+    controller: true
+    domain: com
+    group: polyaxon
+    kind: KfJob
+    path: github.com/polyaxon/mloperator/api/v1
+    version: v1
+  - api:
+      crdVersion: v1
+      namespaced: true
+    controller: true
+    domain: com
+    group: polyaxon
+    kind: Cluster
+    path: github.com/polyaxon/mloperator/api/v1
+    version: v1
 version: "3"

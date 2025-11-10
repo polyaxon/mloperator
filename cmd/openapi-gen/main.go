@@ -14,7 +14,7 @@ import (
 	// _ "k8s.io/code-generator/cmd/go-to-protobuf/protoc-gen-gogo"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	operationv1 "github.com/polyaxon/mloperator/api/v1"
+	apiv1 "github.com/polyaxon/mloperator/api/v1"
 )
 
 func main() {
@@ -32,7 +32,7 @@ func main() {
 	refCallback := func(path string) spec.Ref {
 		return spec.MustCreateRef("#/definitions/" + common.EscapeJsonPointer(swaggify(path)))
 	}
-	for k, v := range operationv1.GetOpenAPIDefinitions(refCallback) {
+	for k, v := range apiv1.GetOpenAPIDefinitions(refCallback) {
 		oAPIDefs[k] = v
 	}
 

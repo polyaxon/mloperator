@@ -11,5 +11,6 @@ import (
 // +k8s:openapi-gen=true
 type BatchJobSpec struct {
 	// Template describes the pods that will be created.
+	// +kubebuilder:pruning:PreserveUnknownFields
 	Template corev1.PodTemplateSpec `json:"template" protobuf:"bytes,1,opt,name=template"`
 }

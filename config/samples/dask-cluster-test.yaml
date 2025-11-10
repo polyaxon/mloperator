@@ -1,0 +1,134 @@
+apiVersion: polyaxon.com/v1
+kind: Cluster
+metadata:
+  name: dask-cluster-test
+  namespace: polyaxon-agent
+  labels:
+    app.kubernetes.io/name: dask-cluster-test
+    app.kubernetes.io/instance: dask-cluster-test
+daskClusterSpec:
+  # Optional: idle timeout in seconds before scaling down
+  # idleTimeout: 300
+
+  service:
+    type: NodePort
+    ports:
+    - name: tcp-comm
+      protocol: TCP
+      port: 8786
+      targetPort: "tcp-comm"
+    - name: http-dashboard
+      protocol: TCP
+      port: 8787
+      targetPort: "http-dashboard"
+
+  replicaSpecs:
+    # Worker replicas
+    Worker:
+      replicas: 1
+      template:
+        spec:
+          containers:
+          - name: worker
+            image: "ghcr.io/dask/dask:latest"
+            imagePullPolicy: "IfNotPresent"
+            args:
+              - dask-worker
+              - --name
+              - $(DASK_WORKER_NAME)
+              - --dashboard
+              - --dashboard-address
+              - "8788"
+            ports:
+              - name: http-dashboard
+                containerPort: 8788
+                protocol: TCP
+            resources:
+              limits:
+                memory: "2Gi"
+                cpu: "1"
+              requests:
+                memory: "1Gi"
+                cpu: "500m"
+
+    # Scheduler replica
+    Scheduler:
+      replicas: 1
+      template:
+        spec:
+          containers:
+          - name: scheduler
+            image: "ghcr.io/dask/dask:latest"
+            imagePullPolicy: "IfNotPresent"
+            args:
+              - dask-scheduler
+            ports:
+              - name: tcp-comm
+                containerPort: 8786
+                protocol: TCP
+              - name: http-dashboard
+                containerPort: 8787
+                protocol: TCP
+            readinessProbe:
+              httpGet:
+                port: http-dashboard
+                path: /health
+              initialDelaySeconds: 5
+              periodSeconds: 10
+            livenessProbe:
+              httpGet:
+                port: http-dashboard
+                path: /health
+              initialDelaySeconds: 15
+              periodSeconds: 20
+            resources:
+              limits:
+                memory: "1Gi"
+                cpu: "1"
+              requests:
+                memory: "512Mi"
+                cpu: "500m"
+
+    # Job replica - for running actual Dask computations (optional)
+    # Note: Job replicas are not used with DaskCluster, only with DaskJob
+    # If you need to run a job, submit it separately after the cluster is created
+    # Job:
+    #   replicas: 1
+    #   template:
+    #     spec:
+    #       restartPolicy: OnFailure
+    #       containers:
+    #       - name: job
+    #         image: "ghcr.io/dask/dask:latest"
+    #         imagePullPolicy: "IfNotPresent"
+    #         command:
+    #           - python
+    #           - -c
+    #           - |
+    #             from dask.distributed import Client
+    #             import time
+    #
+    #             # Connect to scheduler
+    #             client = Client('tcp://dask-cluster-test:8786')
+    #             print(f"Connected to scheduler: {client}")
+    #
+    #             # Simple test computation
+    #             def square(x):
+    #                 return x ** 2
+    #
+    #             # Submit work
+    #             futures = client.map(square, range(10))
+    #             results = client.gather(futures)
+    #             print(f"Results: {results}")
+    #
+    #             # Keep connection alive for testing
+    #             time.sleep(300)
+    #
+    #             client.close()
+    #         resources:
+    #           limits:
+    #             memory: "512Mi"
+    #             cpu: "500m"
+    #           requests:
+    #             memory: "256Mi"
+    #             cpu: "250m"

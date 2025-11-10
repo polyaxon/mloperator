@@ -22,8 +22,8 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/polyaxon/mloperator/api/v1.PytorchJobSpec":     schema_polyaxon_operator_api_v1_PytorchJobSpec(ref),
 		"github.com/polyaxon/mloperator/api/v1.ServiceSpec":        schema_polyaxon_operator_api_v1_ServiceSpec(ref),
 		"github.com/polyaxon/mloperator/api/v1.TFJobSpec":          schema_polyaxon_operator_api_v1_TFJobSpec(ref),
-		"github.com/polyaxon/mloperator/api/v1.DaskJobSpec":        schema_polyaxon_operator_api_v1_DaskJobSpec(ref),
-		"github.com/polyaxon/mloperator/api/v1.RayJobSpec":         schema_polyaxon_operator_api_v1_RayJobSpec(ref),
+		"github.com/polyaxon/mloperator/api/v1.DaskClusterSpec":    schema_polyaxon_operator_api_v1_DaskClusterSpec(ref),
+		"github.com/polyaxon/mloperator/api/v1.RayClusterSpec":     schema_polyaxon_operator_api_v1_RayClusterSpec(ref),
 		"github.com/polyaxon/mloperator/api/v1.TerminationSpec":    schema_polyaxon_operator_api_v1_TerminationSpec(ref),
 	}
 }
@@ -162,16 +162,16 @@ func schema_polyaxon_operator_api_v1_Operation(ref common.ReferenceCallback) com
 							Ref:         ref("github.com/polyaxon/mloperator/api/v1.MPIJobSpec"),
 						},
 					},
-					"daskJobSpec": {
+					"daskClusterSpec": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Specification of the desired behavior of a DaskJob.",
-							Ref:         ref("github.com/polyaxon/mloperator/api/v1.DaskJobSpec"),
+							Description: "Specification of the desired behavior of a DaskCluster.",
+							Ref:         ref("github.com/polyaxon/mloperator/api/v1.DaskClusterSpec"),
 						},
 					},
-					"rayJobSpec": {
+					"rayClusterSpec": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Specification of the desired behavior of a RayJob.",
-							Ref:         ref("github.com/polyaxon/mloperator/api/v1.RayJobSpec"),
+							Description: "Specification of the desired behavior of a RayCluster.",
+							Ref:         ref("github.com/polyaxon/mloperator/api/v1.RayClusterSpec"),
 						},
 					},
 					"status": {
@@ -184,7 +184,7 @@ func schema_polyaxon_operator_api_v1_Operation(ref common.ReferenceCallback) com
 			},
 		},
 		Dependencies: []string{
-			"github.com/polyaxon/mloperator/api/v1.BatchJobSpec", "github.com/polyaxon/mloperator/api/v1.MPIJobSpec", "github.com/polyaxon/mloperator/api/v1.OperationStatus", "github.com/polyaxon/mloperator/api/v1.PytorchJobSpec", "github.com/polyaxon/mloperator/api/v1.ServiceSpec", "github.com/polyaxon/mloperator/api/v1.TFJobSpec", "github.com/polyaxon/mloperator/api/v1.RayJobSpec", "github.com/polyaxon/mloperator/api/v1.DaskJobSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/polyaxon/mloperator/api/v1.BatchJobSpec", "github.com/polyaxon/mloperator/api/v1.MPIJobSpec", "github.com/polyaxon/mloperator/api/v1.OperationStatus", "github.com/polyaxon/mloperator/api/v1.PytorchJobSpec", "github.com/polyaxon/mloperator/api/v1.ServiceSpec", "github.com/polyaxon/mloperator/api/v1.TFJobSpec", "github.com/polyaxon/mloperator/api/v1.RayClusterSpec", "github.com/polyaxon/mloperator/api/v1.DaskClusterSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -431,11 +431,11 @@ func schema_polyaxon_operator_api_v1_TFJobSpec(ref common.ReferenceCallback) com
 	}
 }
 
-func schema_polyaxon_operator_api_v1_RayJobSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_polyaxon_operator_api_v1_RayClusterSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "RayJobSpec defines the desired state of a ray job",
+				Description: "RayClusterSpec defines the desired state of a ray job",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"termination": {
@@ -452,11 +452,11 @@ func schema_polyaxon_operator_api_v1_RayJobSpec(ref common.ReferenceCallback) co
 	}
 }
 
-func schema_polyaxon_operator_api_v1_DaskJobSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_polyaxon_operator_api_v1_DaskClusterSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "RayJobSpec defines the desired state of a ray job",
+				Description: "RayClusterSpec defines the desired state of a ray job",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"termination": {

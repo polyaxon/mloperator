@@ -1,4 +1,4 @@
-apiVersion: core.polyaxon.com/v1
+apiVersion: polyaxon.com/v1
 kind: Operation
 metadata:
   labels:

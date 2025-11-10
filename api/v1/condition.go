@@ -150,32 +150,165 @@ func hasLastOperationCondition(status OperationStatus, condType OperationConditi
 	return false
 }
 
-// isOperationStarting checks if an ml operation status is in starting condition
-func isOperationStarting(status OperationStatus) bool {
-	return hasLastOperationCondition(status, OperationStarting)
+// IsStarting checks if an ml operation status is in starting condition
+func (status *OperationStatus) IsStarting() bool {
+	return hasLastOperationCondition(*status, OperationStarting)
 }
 
-// isOperationRunning checks if an ml operation status is in running condition
-func isOperationRunning(status OperationStatus) bool {
-	return hasLastOperationCondition(status, OperationRunning)
+// IsRunning checks if an ml operation status is in running condition
+func (status *OperationStatus) IsRunning() bool {
+	return hasLastOperationCondition(*status, OperationRunning)
 }
 
-// isOperationWarning checks if an ml operation status is in warning condition
-func isOperationWarning(status OperationStatus) bool {
-	return hasLastOperationCondition(status, OperationWarning)
+// IsWarning checks if an ml operation status is in warning condition
+func (status *OperationStatus) IsWarning() bool {
+	return hasLastOperationCondition(*status, OperationWarning)
 }
 
-// isOperationSucceeded checks if an ml operation status is succeeded
-func isOperationSucceeded(status OperationStatus) bool {
-	return hasOperationCondition(status, OperationSucceeded)
+// IsSucceeded checks if an ml operation status is succeeded
+func (status *OperationStatus) IsSucceeded() bool {
+	return hasOperationCondition(*status, OperationSucceeded)
 }
 
-// isOperationFailed checks if an ml operation status is failed
-func isOperationFailed(status OperationStatus) bool {
-	return hasOperationCondition(status, OperationFailed)
+// IsFailed checks if an ml operation status is failed
+func (status *OperationStatus) IsFailed() bool {
+	return hasOperationCondition(*status, OperationFailed)
 }
 
-// isOperationStopped checks if an ml operation status is stopped
-func isOperationStopped(status OperationStatus) bool {
-	return hasOperationCondition(status, OperationStopped)
+// IsStopped checks if an ml operation status is stopped
+func (status *OperationStatus) IsStopped() bool {
+	return hasOperationCondition(*status, OperationStopped)
+}
+
+// IsDone checks if it the Operation reached a final condition
+func (status *OperationStatus) IsDone() bool {
+	return status.IsSucceeded() || status.IsFailed() || status.IsStopped()
+}
+
+// IsOperationBeingDeleted checks if a Kubernetes resource is being deleted
+// This works with any type that implements metav1.Object (Job, Service, Operation, etc.)
+func IsOperationBeingDeleted[T metav1.Object](obj T) bool {
+	return !obj.GetDeletionTimestamp().IsZero()
+}
+
+// removeCondition removes a condition of the specified type from the status
+func removeCondition(status *OperationStatus, conditionType OperationConditionType) {
+	var newConditions []OperationCondition
+	for _, c := range status.Conditions {
+		if c.Type == conditionType {
+			continue
+		}
+		newConditions = append(newConditions, c)
+	}
+	status.Conditions = newConditions
+}
+
+// logCondition logs a condition to the status
+func logCondition(status *OperationStatus, condType OperationConditionType, conditionStatus corev1.ConditionStatus, reason, message string) bool {
+	currentCond := getLastEntityCondition(*status, condType)
+	cond, isUpdated := getOrUpdateOperationCondition(currentCond, condType, conditionStatus, reason, message)
+	if isUpdated && cond != nil {
+		removeCondition(status, condType)
+		status.Conditions = append(status.Conditions, *cond)
+		return true
+	}
+	return false
+}
+
+// LogStarting sets Operation to starting
+func (status *OperationStatus) LogStarting() bool {
+	return logCondition(status, OperationStarting, corev1.ConditionTrue, "OperatorController", "Operation is starting")
+}
+
+// LogRunning sets Operation to running
+func (status *OperationStatus) LogRunning() bool {
+	return logCondition(status, OperationRunning, corev1.ConditionTrue, "OperatorController", "Operation is running")
+}
+
+// LogWarning sets Operation to succeeded
+func (status *OperationStatus) LogWarning(reason, message string) bool {
+	if reason == "" {
+		reason = "OperatorController"
+	}
+	if message == "" {
+		message = "Underlaying job has an issue"
+	}
+	return logCondition(status, OperationWarning, corev1.ConditionTrue, reason, message)
+}
+
+// LogSucceeded sets Operation to succeeded
+func (status *OperationStatus) LogSucceeded() bool {
+	return logCondition(status, OperationSucceeded, corev1.ConditionTrue, "OperatorController", "Operation has succeeded")
+}
+
+// LogFailed sets Operation to failed
+func (status *OperationStatus) LogFailed(reason, message string) bool {
+	return logCondition(status, OperationFailed, corev1.ConditionTrue, reason, message)
+}
+
+// LogStopped sets Operation to stopped
+func (status *OperationStatus) LogStopped(reason, message string) bool {
+	return logCondition(status, OperationStopped, corev1.ConditionTrue, reason, message)
+}
+
+// ShouldMarkJobAsDeleted checks if a job that doesn't exist should be marked as deleted
+// rather than being recreated. It returns true if the job was previously created and running
+// but is now missing (deleted externally).
+//
+// This function checks if the operation has progressed beyond initial creation by examining
+// the status conditions. If the last condition indicates the job was running or had warnings,
+// it means the job existed before and should not be recreated.
+//
+// Returns:
+//   - shouldMarkDeleted: true if the job should be marked as deleted instead of recreated
+//   - isDone: true if the operation is already in a terminal state
+func (status *OperationStatus) ShouldMarkJobAsDeleted() (shouldMarkDeleted bool, isDone bool) {
+	// If operation is already done, don't recreate or mark as deleted
+	if status.IsDone() {
+		return false, true
+	}
+
+	// Check if the job was previously created (status has progressed beyond creation)
+	if len(status.Conditions) == 0 {
+		// No conditions mean the job was never created, so it's safe to create it
+		return false, false
+	}
+
+	lastCond := status.Conditions[len(status.Conditions)-1]
+
+	// If the operation was previously running or had warnings, it means
+	// the job existed before and was deleted externally
+	if lastCond.Type == OperationRunning || lastCond.Type == OperationWarning {
+		return true, false
+	}
+
+	// For other states (Starting, etc.), allow job creation
+	return false, false
+}
+
+// MarkJobAsDeleted marks an operation as failed or stopped due to external job deletion.
+// This is a helper function that sets the appropriate status when a job is detected
+// as deleted externally.
+//
+// Parameters:
+//   - jobType: a descriptive name for the job type (e.g., "Kubernetes Job", "TFJob")
+//   - useFailed: if true, marks as Failed; if false, marks as Stopped
+//
+// Returns true if the status was updated
+func (status *OperationStatus) MarkJobAsDeleted(jobType string, useFailed bool) bool {
+	now := metav1.Now()
+	message := "The underlying " + jobType + " was deleted externally"
+
+	var updated bool
+	if useFailed {
+		updated = status.LogFailed("JobDeleted", message)
+	} else {
+		updated = status.LogStopped("JobDeleted", message)
+	}
+
+	if updated {
+		status.CompletionTime = &now
+	}
+
+	return updated
 }

@@ -41,6 +41,7 @@ type KFReplicaSpec struct {
 	// Template is the object that describes the pod that
 	// will be created for this replica. RestartPolicy in PodTemplateSpec
 	// will be overide by RestartPolicy in ReplicaSpec
+	// +kubebuilder:pruning:PreserveUnknownFields
 	Template corev1.PodTemplateSpec `json:"template" protobuf:"bytes,2,opt,name=template"`
 
 	// Restart policy for all replicas within the job.

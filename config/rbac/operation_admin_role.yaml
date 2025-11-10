@@ -1,7 +1,7 @@
 # This rule is not used by the project mloperator itself.
 # It is provided to allow the cluster admin to help manage permissions for users.
 #
-# Grants full permissions ('*') over core.polyaxon.com.
+# Grants full permissions ('*') over polyaxon.com.
 # This role is intended for users authorized to modify roles and bindings within the cluster,
 # enabling them to delegate specific permissions to other users or groups as needed.
 
@@ -14,14 +14,20 @@ metadata:
   name: operation-admin-role
 rules:
 - apiGroups:
-  - core.polyaxon.com
+  - polyaxon.com
   resources:
-  - operations
+  - clusters
+  - jobs
+  - kfjobs
+  - services
   verbs:
   - '*'
 - apiGroups:
-  - core.polyaxon.com
+  - polyaxon.com
   resources:
-  - operations/status
+  - clusters/status
+  - jobs/status
+  - kfjobs/status
+  - services/status
   verbs:
   - get
