@@ -122,6 +122,8 @@ github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRI
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/polyaxon/sdks v1.22.1-0.20250913124215-26275a96ce62 h1:raFcRwOwUH6ReFVNWDu77e4rZBQn/V+k50htLx1zby0=
 github.com/polyaxon/sdks v1.22.1-0.20250913124215-26275a96ce62/go.mod h1:Ymf/NykGcYbTWxJWjyNJlqFggYlWaddrca4IUfqJZH8=
+github.com/polyaxon/sdks v1.22.1-0.20251113124107-4ed2ef707d09 h1:ZIpjCQXKkU7ftHoDbX61udlqZJC4LOzf5EazMGW+AkM=
+github.com/polyaxon/sdks v1.22.1-0.20251113124107-4ed2ef707d09/go.mod h1:Ymf/NykGcYbTWxJWjyNJlqFggYlWaddrca4IUfqJZH8=
 github.com/prometheus/client_golang v1.22.0 h1:rb93p9lokFEsctTys46VnV1kLCDpVZ0a/Y92Vm0Zc6Q=
 github.com/prometheus/client_golang v1.22.0/go.mod h1:R7ljNsLXhuQXYZYtw6GAE9AZg8Y7vEW5scdCXrWRXC0=
 github.com/prometheus/client_model v0.6.1 h1:ZKSh/rekM+n3CeS952MLRAdFwIKqeY8b62p8ais2e9E=

@@ -29,4 +29,56 @@ type TerminationSpec struct {
 	// TODO: (Cleanup logic once kubernetes adds the cleanup controller)
 	// +optional
 	TTLSecondsAfterFinished *int32 `json:"ttlSecondsAfterFinished,omitempty" protobuf:"varint,3,opt,name=ttlSecondsAfterFinished"`
+
+	// Culling defines the culling specification for the service
+	// +optional
+	Culling *CullingSpec `json:"culling,omitempty" protobuf:"bytes,4,opt,name=culling"`
+
+	// Probe defines the activity probe for the service
+	// +optional
+	Probe *ActivityProbe `json:"probe,omitempty" protobuf:"bytes,5,opt,name=probe"`
+}
+
+// CullingSpec defines the configuration for culling idle services
+// +k8s:openapi-gen=true
+type CullingSpec struct {
+	// Timeout is the duration in seconds that the service needs to be idle before it is culled
+	// +optional
+	Timeout *int32 `json:"timeout,omitempty" protobuf:"varint,1,opt,name=timeout"`
+}
+
+// ActivityProbe defines the configuration for checking activity
+// +k8s:openapi-gen=true
+type ActivityProbe struct {
+	// Exec specifies the action to take.
+	// +optional
+	Exec *ActivityProbeExec `json:"exec,omitempty" protobuf:"bytes,1,opt,name=exec"`
+
+	// Http specifies the http configuration.
+	// +optional
+	Http *ActivityProbeHttp `json:"http,omitempty" protobuf:"bytes,2,opt,name=http"`
+}
+
+// ActivityProbeExec defines the configuration for exec probe
+// +k8s:openapi-gen=true
+type ActivityProbeExec struct {
+	// Command is the command line to execute inside the container, the working directory for the
+	// command  is root ('/') in the container's filesystem. The command is simply exec'd, it is
+	// not run inside a shell, so traditional shell instructions ('|', etc) won't work. To use
+	// a shell, you need to explicitly call out to that shell.
+	// Exit status of 0 is treated as live/healthy and non-zero is unhealthy.
+	// +optional
+	Command []string `json:"command,omitempty" protobuf:"bytes,1,rep,name=command"`
+}
+
+// ActivityProbeHttp defines the configuration for http probe
+// +k8s:openapi-gen=true
+type ActivityProbeHttp struct {
+	// Path is the path to the http server
+	// +optional
+	Path string `json:"path,omitempty" protobuf:"bytes,1,opt,name=path"`
+
+	// Port is the port to the http server
+	// +optional
+	Port int32 `json:"port,omitempty" protobuf:"varint,2,opt,name=port"`
 }

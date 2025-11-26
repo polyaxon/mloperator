@@ -7728,6 +7728,30 @@ spec:
               backoffLimit:
                 format: int32
                 type: integer
+              culling:
+                properties:
+                  timeout:
+                    format: int32
+                    type: integer
+                type: object
+              probe:
+                properties:
+                  exec:
+                    properties:
+                      command:
+                        items:
+                          type: string
+                        type: array
+                    type: object
+                  http:
+                    properties:
+                      path:
+                        type: string
+                      port:
+                        format: int32
+                        type: integer
+                    type: object
+                type: object
               ttlSecondsAfterFinished:
                 format: int32
                 type: integer

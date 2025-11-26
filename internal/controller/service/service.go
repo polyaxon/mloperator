@@ -2,6 +2,11 @@ package service
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"strings"
+	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -34,6 +39,13 @@ func (r *ServiceReconciler) reconcileService(ctx context.Context, instance *apiv
 	}
 
 	if duration, err := r.handlePastActiveDeadline(ctx, instance); err != nil || duration != nil {
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{Requeue: true, RequeueAfter: *duration}, nil
+	}
+
+	if duration, err := r.handleCulling(ctx, instance); err != nil || duration != nil {
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -224,4 +236,174 @@ func (r *ServiceReconciler) handleServiceBackoffLimit(ctx context.Context, insta
 	}
 
 	return nil
+}
+
+// handleCulling checks if the service is idle and should be culled
+func (r *ServiceReconciler) handleCulling(ctx context.Context, instance *apiv1.Service) (*time.Duration, error) {
+	log := r.Log
+
+	if instance.Termination.Culling == nil || instance.Termination.Culling.Timeout == nil {
+		return nil, nil
+	}
+
+	// Log the culling timeout
+	log.V(1).Info("Culling timeout", "timeout", instance.Termination.Culling.Timeout)
+
+	// Check if the service is running
+	if !instance.Status.IsRunning() {
+		return nil, nil
+	}
+
+	timeout := time.Duration(*instance.Termination.Culling.Timeout) * time.Second
+
+	// Check for activity
+	var lastActivity time.Time
+	if instance.Termination.Probe != nil && instance.Termination.Probe.Http != nil {
+		var err error
+		lastActivity, err = r.checkHttpActivity(ctx, instance, instance.Termination.Probe.Http)
+		if err != nil {
+			log.Error(err, "Failed to check http activity")
+			// Assume active on error to avoid accidental culling
+			// Requeue to check again later
+			return &timeout, nil
+		}
+	} else if instance.Termination.Probe != nil && instance.Termination.Probe.Exec != nil {
+		// Exec probe is defined in the API but not yet implemented
+		log.Info("Exec probe configured but not yet implemented, skipping culling check")
+		return nil, nil
+	} else {
+		// No probe configured, cannot cull based on activity
+		return nil, nil
+	}
+
+	elapsed := time.Since(lastActivity)
+
+	if elapsed < timeout {
+		// Not idle long enough
+		// Requeue for the remaining time
+		remaining := timeout - elapsed
+		return &remaining, nil
+	}
+
+	log.Info("Service is idle, triggering culling", "idleDuration", elapsed, "timeout", timeout)
+	return nil, r.delete(ctx, instance)
+}
+
+type HttpStatus struct {
+	LastActivity string `json:"last_activity"`
+	Started      string `json:"started"`
+}
+
+func (r *ServiceReconciler) checkHttpActivity(ctx context.Context, instance *apiv1.Service, probe *apiv1.ActivityProbeHttp) (time.Time, error) {
+	log := r.Log
+
+	// First verify the k8s Service exists
+	foundService := &corev1.Service{}
+	serviceName := instance.Name
+	if instance.ServiceSpec != nil && instance.ServiceSpec.IsExternal {
+		serviceName += "-ext"
+	}
+
+	err := r.Get(ctx, types.NamespacedName{Name: serviceName, Namespace: instance.Namespace}, foundService)
+	if err != nil {
+		if apierrs.IsNotFound(err) {
+			log.V(1).Info("K8s Service not found yet, will retry later", "serviceName", serviceName, "namespace", instance.Namespace)
+			return time.Time{}, fmt.Errorf("service %s not found in namespace %s", serviceName, instance.Namespace)
+		}
+		return time.Time{}, err
+	}
+
+	log.V(1).Info("K8s Service found", "serviceName", serviceName, "namespace", instance.Namespace, "clusterIP", foundService.Spec.ClusterIP)
+
+	// Determine the port to use
+	var port int32
+	if probe.Port != 0 {
+		// Use explicitly configured port
+		port = probe.Port
+	} else {
+		// Default to first service port
+		ports := managers.GetPodPorts(instance.ServiceSpec.Template.Spec, managers.DefaultTargetPort)
+		if instance.ServiceSpec.Ports != nil && len(instance.ServiceSpec.Ports) > 0 {
+			ports = instance.ServiceSpec.Ports
+		}
+
+		if len(ports) == 0 {
+			return time.Time{}, fmt.Errorf("no ports defined for service")
+		}
+		port = ports[0]
+	}
+
+	// Handle path - use configured path or default to /api/status
+	path := probe.Path
+	if path == "" {
+		path = "/api/status"
+	}
+	if strings.HasSuffix(path, "/") {
+		path = strings.TrimSuffix(path, "/")
+	}
+
+	// Access service directly - Jupyter is configured with base_url matching the proxy path
+	host := fmt.Sprintf("%s.%s.svc.cluster.local", serviceName, instance.Namespace)
+
+	// Get instance UUID from label
+	instanceID := ""
+	if instance.ObjectMeta.Labels != nil {
+		instanceID = instance.ObjectMeta.Labels["app.kubernetes.io/instance"]
+	}
+	if instanceID == "" {
+		return time.Time{}, fmt.Errorf("missing required label app.kubernetes.io/instance")
+	}
+
+	// Get owner and project from annotations
+	owner := ""
+	project := ""
+	if instance.Annotations != nil {
+		owner = instance.Annotations["operation.polyaxon.com/owner"]
+		project = instance.Annotations["operation.polyaxon.com/project"]
+	}
+	if owner == "" || project == "" {
+		return time.Time{}, fmt.Errorf("missing required annotations operation.polyaxon.com/owner or operation.polyaxon.com/project")
+	}
+
+	// Construct full Polyaxon service path: /services/v1/{namespace}/{owner}/{project}/runs/{uuid}/{port}{path}
+	fullPath := fmt.Sprintf("/services/v1/%s/%s/%s/runs/%s/%d%s",
+		instance.Namespace, owner, project, instanceID, port, path)
+
+	url := fmt.Sprintf("http://%s:%d%s", host, port, fullPath)
+
+	log.V(1).Info("Checking HTTP activity", "url", url)
+
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Error(err, "HTTP request failed", "url", url, "timeout", client.Timeout)
+		return time.Time{}, err
+	}
+	defer resp.Body.Close()
+
+	log.V(1).Info("HTTP response received", "status", resp.StatusCode, "url", url)
+
+	if resp.StatusCode != http.StatusOK {
+		return time.Time{}, fmt.Errorf("http api returned status: %d", resp.StatusCode)
+	}
+
+	var status HttpStatus
+	if err := json.NewDecoder(resp.Body).Decode(&status); err != nil {
+		return time.Time{}, err
+	}
+
+	lastActivity, err := time.Parse(time.RFC3339, status.LastActivity)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return lastActivity, nil
 }

@@ -9,7 +9,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.22.0
 	github.com/onsi/gomega v1.36.1
 	github.com/pkg/errors v0.9.1
-	github.com/polyaxon/sdks v1.22.1-0.20250913124215-26275a96ce62
+  github.com/polyaxon/sdks v1.22.1-0.20251113124107-4ed2ef707d09
 	github.com/prometheus/client_golang v1.22.0
 	golang.org/x/net v0.38.0
 	k8s.io/api v0.33.0
