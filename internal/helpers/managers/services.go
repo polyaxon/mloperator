@@ -1,6 +1,7 @@
 package managers
 
 import (
+	"fmt"
 	"reflect"
 
 	corev1 "k8s.io/api/core/v1"
@@ -66,7 +67,7 @@ func GenerateService(name string, namespace string, labels map[string]string, an
 
 	for _, sp := range ports {
 		sports = append(sports, corev1.ServicePort{
-			Name:       name,
+			Name:       fmt.Sprintf("port-%d", sp),
 			Port:       sp,
 			TargetPort: intstr.FromInt(int(sp)),
 			Protocol:   "TCP",
