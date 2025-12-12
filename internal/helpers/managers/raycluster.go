@@ -89,6 +89,39 @@ func generateWorkerGroupSpec(replicaSpec apiv1.RayReplicaSpec, labels map[string
 	}
 }
 
+// generateAutoscalerOptions converts our autoscaler options to rayapi.AutoscalerOptions
+// It also maps termination.Culling.Timeout to IdleTimeoutSeconds when autoscaling is enabled
+func generateAutoscalerOptions(opts *apiv1.RayAutoscalerOptions, termination apiv1.TerminationSpec) *rayapi.AutoscalerOptions {
+	result := &rayapi.AutoscalerOptions{}
+	hasConfig := false
+
+	// Map termination.Culling.Timeout to IdleTimeoutSeconds
+	if termination.Culling != nil && termination.Culling.Timeout != nil {
+		result.IdleTimeoutSeconds = termination.Culling.Timeout
+		hasConfig = true
+	}
+
+	if opts != nil {
+		if opts.UpscalingMode != "" {
+			mode := rayapi.UpscalingMode(opts.UpscalingMode)
+			result.UpscalingMode = &mode
+			hasConfig = true
+		}
+
+		if opts.ImagePullPolicy != "" {
+			policy := corev1.PullPolicy(opts.ImagePullPolicy)
+			result.ImagePullPolicy = &policy
+			hasConfig = true
+		}
+	}
+
+	if !hasConfig {
+		return nil
+	}
+
+	return result
+}
+
 // GenerateRayCluster returns a RayCluster
 func GenerateRayCluster(
 	name string,
@@ -111,10 +144,12 @@ func GenerateRayCluster(
 
 	// Create a RayCluster spec (not RayCluster)
 	clusterSpec := &rayapi.RayClusterSpec{
-		RayVersion:       spec.RayVersion,
-		HeadGroupSpec:    head,
-		WorkerGroupSpecs: workers,
-		Suspend:          spec.Suspend,
+		RayVersion:              spec.RayVersion,
+		HeadGroupSpec:           head,
+		WorkerGroupSpecs:        workers,
+		Suspend:                 spec.Suspend,
+		EnableInTreeAutoscaling: spec.EnableInTreeAutoscaling,
+		AutoscalerOptions:       generateAutoscalerOptions(spec.AutoscalerOptions, termination),
 	}
 
 	cluster := &unstructured.Unstructured{}

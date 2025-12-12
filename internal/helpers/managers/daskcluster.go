@@ -102,3 +102,45 @@ func GenerateDaskCluster(
 
 	return clusterResource, nil
 }
+
+// GenerateDaskAutoscaler returns a DaskAutoscaler resource for the Dask operator
+func GenerateDaskAutoscaler(
+	name string,
+	namespace string,
+	labels map[string]string,
+	annotations map[string]string,
+	spec apiv1.DaskClusterSpec,
+) (*unstructured.Unstructured, error) {
+	// Only create autoscaler if both min and max replicas are set
+	if spec.MinReplicas == nil || spec.MaxReplicas == nil {
+		return nil, nil
+	}
+
+	autoscaler := daskapi.DaskAutoscaler{
+		Spec: daskapi.DaskAutoscalerSpec{
+			Cluster: name,
+			Minimum: int(*spec.MinReplicas),
+			Maximum: int(*spec.MaxReplicas),
+		},
+	}
+
+	autoscalerResource := &unstructured.Unstructured{}
+	autoscalerResource.SetAPIVersion(kinds.DaskAPIVersion)
+	autoscalerResource.SetKind(kinds.DaskAutoscalerKind)
+	autoscalerResource.SetLabels(labels)
+	autoscalerResource.SetAnnotations(annotations)
+	autoscalerResource.SetName(name)
+	autoscalerResource.SetNamespace(namespace)
+
+	autoscalerManifest, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&autoscaler.Spec)
+
+	if err != nil {
+		return nil, fmt.Errorf("convert DaskAutoscaler to unstructured error: %v", err)
+	}
+
+	if err := unstructured.SetNestedField(autoscalerResource.Object, autoscalerManifest, "spec"); err != nil {
+		return nil, fmt.Errorf("set .spec error: %v", err)
+	}
+
+	return autoscalerResource, nil
+}

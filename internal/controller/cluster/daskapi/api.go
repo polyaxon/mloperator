@@ -42,3 +42,18 @@ type DaskClusterStatus struct {
 type DaskCluster struct {
 	Spec DaskClusterSpec `json:"spec"`
 }
+
+// DaskAutoscalerSpec defines the desired state of a DaskAutoscaler
+type DaskAutoscalerSpec struct {
+	// Cluster is the name of the DaskCluster to autoscale
+	Cluster string `json:"cluster"`
+	// Minimum is the minimum number of workers
+	Minimum int `json:"minimum"`
+	// Maximum is the maximum number of workers
+	Maximum int `json:"maximum"`
+}
+
+// DaskAutoscaler is the Schema for the daskautoscalers API
+type DaskAutoscaler struct {
+	Spec DaskAutoscalerSpec `json:"spec"`
+}

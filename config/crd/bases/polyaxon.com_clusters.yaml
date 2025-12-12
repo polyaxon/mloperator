@@ -27,6 +27,12 @@ spec:
               idleTimeout:
                 format: int32
                 type: integer
+              maxReplicas:
+                format: int32
+                type: integer
+              minReplicas:
+                format: int32
+                type: integer
               replicaSpecs:
                 additionalProperties:
                   properties:
@@ -3774,6 +3780,15 @@ spec:
             type: object
           rayClusterSpec:
             properties:
+              autoscalerOptions:
+                properties:
+                  imagePullPolicy:
+                    type: string
+                  upscalingMode:
+                    type: string
+                type: object
+              enableInTreeAutoscaling:
+                type: boolean
               entrypoint:
                 type: string
               head:

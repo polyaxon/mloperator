@@ -37,6 +37,14 @@ type DaskClusterSpec struct {
 	ReplicaSpecs map[DaskReplicaType]DaskReplicaSpec `json:"replicaSpecs" protobuf:"bytes,4,opt,name=replicaSpecs"`
 
 	Service corev1.ServiceSpec `json:"service" protobuf:"bytes,5,opt,name=service"`
+
+	// MinReplicas is the minimum number of workers for autoscaling.
+	// If set along with MaxReplicas, a DaskAutoscaler will be created.
+	MinReplicas *int32 `json:"minReplicas,omitempty" protobuf:"bytes,6,opt,name=minReplicas"`
+
+	// MaxReplicas is the maximum number of workers for autoscaling.
+	// If set along with MinReplicas, a DaskAutoscaler will be created.
+	MaxReplicas *int32 `json:"maxReplicas,omitempty" protobuf:"bytes,7,opt,name=maxReplicas"`
 }
 
 // DaskReplicaType is the type for DaskReplica. Can be one of "Job" or "Worker" or "Scheduler".

@@ -29,6 +29,18 @@ type RayReplicaSpec struct {
 	RestartPolicy corev1.RestartPolicy `json:"restartPolicy,omitempty"`
 }
 
+// RayAutoscalerOptions specifies optional configuration for the Ray autoscaler
+// +k8s:openapi-gen=true
+type RayAutoscalerOptions struct {
+	// UpscalingMode is "Conservative", "Default", or "Aggressive"
+	// Conservative: Upscaling is rate-limited
+	// Default: Upscaling is not rate-limited
+	// Aggressive: An alias for Default
+	UpscalingMode string `json:"upscalingMode,omitempty"`
+	// ImagePullPolicy for the autoscaler container
+	ImagePullPolicy string `json:"imagePullPolicy,omitempty"`
+}
+
 // RayClusterSpec defines the desired state of a Ray job
 // +k8s:openapi-gen=true
 type RayClusterSpec struct {
@@ -47,4 +59,8 @@ type RayClusterSpec struct {
 	Head RayReplicaSpec `json:"head" protobuf:"bytes,3,opt,name=head"`
 	// Worker replicas spec
 	Workers []RayReplicaSpec `json:"workers" protobuf:"bytes,3,opt,name=workers"`
+	// EnableInTreeAutoscaling indicates whether operator should create in tree autoscaling configs
+	EnableInTreeAutoscaling *bool `json:"enableInTreeAutoscaling,omitempty"`
+	// AutoscalerOptions specifies optional configuration for the Ray autoscaler
+	AutoscalerOptions *RayAutoscalerOptions `json:"autoscalerOptions,omitempty"`
 }
