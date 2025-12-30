@@ -1,5 +1,9 @@
 package v1
 
+import (
+	batchv1 "k8s.io/api/batch/v1"
+)
+
 // TODO: integerate this it when https://github.com/kubernetes/kubernetes/issues/28486 has been fixed
 // Optional number of failed pods to retain. This will be especially good for when restart is True since the underlaying pods will disapear.
 
@@ -37,6 +41,11 @@ type TerminationSpec struct {
 	// Probe defines the activity probe for the service
 	// +optional
 	Probe *ActivityProbe `json:"probe,omitempty" protobuf:"bytes,5,opt,name=probe"`
+
+	// PodFailurePolicy defines fine-grained rules for how pod failures should be handled.
+	// Requires Kubernetes v1.25+ with PodDisruptionConditions and JobPodFailurePolicy feature gates enabled.
+	// +optional
+	PodFailurePolicy *batchv1.PodFailurePolicy `json:"podFailurePolicy,omitempty" protobuf:"bytes,6,opt,name=podFailurePolicy"`
 }
 
 // CullingSpec defines the configuration for culling idle services

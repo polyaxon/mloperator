@@ -36,6 +36,11 @@ func CopyJobFields(from, to *batchv1.Job) bool {
 		requireUpdate = true
 	}
 
+	if !reflect.DeepEqual(to.Spec.PodFailurePolicy, from.Spec.PodFailurePolicy) {
+		to.Spec.PodFailurePolicy = from.Spec.PodFailurePolicy
+		requireUpdate = true
+	}
+
 	if !reflect.DeepEqual(to.Spec.Template.Spec, from.Spec.Template.Spec) {
 		requireUpdate = true
 		to.Spec.Template.Spec = from.Spec.Template.Spec
@@ -63,6 +68,7 @@ func GenerateJob(
 	backoffLimit *int32,
 	activeDeadlineSeconds *int64,
 	ttlSecondsAfterFinished *int32,
+	podFailurePolicy *batchv1.PodFailurePolicy,
 	podSpec corev1.PodSpec,
 ) *batchv1.Job {
 	if podSpec.RestartPolicy == "" {
@@ -88,6 +94,7 @@ func GenerateJob(
 			BackoffLimit:            utils.GetBackoffLimit(backoffLimit),
 			ActiveDeadlineSeconds:   activeDeadlineSeconds,
 			TTLSecondsAfterFinished: utils.GetTTL(ttlSecondsAfterFinished),
+			PodFailurePolicy:        podFailurePolicy,
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{Labels: l, Annotations: a},
 				Spec:       podSpec,

@@ -29,6 +29,7 @@ func (r *JobReconciler) reconcileJob(ctx context.Context, instance *apiv1.Job) e
 		instance.Termination.BackoffLimit,
 		instance.Termination.ActiveDeadlineSeconds,
 		instance.Termination.TTLSecondsAfterFinished,
+		instance.Termination.PodFailurePolicy,
 		instance.BatchJobSpec.Template.Spec,
 	)
 	if err := ctrl.SetControllerReference(instance, job, r.Scheme); err != nil {

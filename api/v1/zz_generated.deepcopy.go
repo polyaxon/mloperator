@@ -6,6 +6,7 @@ package v1
 
 import (
 	"k8s.io/api/autoscaling/v2"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -925,6 +926,11 @@ func (in *TerminationSpec) DeepCopyInto(out *TerminationSpec) {
 	if in.Probe != nil {
 		in, out := &in.Probe, &out.Probe
 		*out = new(ActivityProbe)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.PodFailurePolicy != nil {
+		in, out := &in.PodFailurePolicy, &out.PodFailurePolicy
+		*out = new(batchv1.PodFailurePolicy)
 		(*in).DeepCopyInto(*out)
 	}
 }

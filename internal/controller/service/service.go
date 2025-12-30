@@ -273,6 +273,7 @@ func (r *ServiceReconciler) handleCulling(ctx context.Context, instance *apiv1.S
 		return nil, nil
 	} else {
 		// No probe configured, cannot cull based on activity
+		log.Info("No probe configured, skipping culling check")
 		return nil, nil
 	}
 

@@ -11167,6 +11167,50 @@ spec:
                     format: int32
                     type: integer
                 type: object
+              podFailurePolicy:
+                properties:
+                  rules:
+                    items:
+                      properties:
+                        action:
+                          type: string
+                        onExitCodes:
+                          properties:
+                            containerName:
+                              type: string
+                            operator:
+                              type: string
+                            values:
+                              items:
+                                format: int32
+                                type: integer
+                              type: array
+                              x-kubernetes-list-type: set
+                          required:
+                          - operator
+                          - values
+                          type: object
+                        onPodConditions:
+                          items:
+                            properties:
+                              status:
+                                type: string
+                              type:
+                                type: string
+                            required:
+                            - status
+                            - type
+                            type: object
+                          type: array
+                          x-kubernetes-list-type: atomic
+                      required:
+                      - action
+                      type: object
+                    type: array
+                    x-kubernetes-list-type: atomic
+                required:
+                - rules
+                type: object
               probe:
                 properties:
                   exec:
