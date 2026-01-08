@@ -2,7 +2,10 @@
 # since it depends on service name and namespace that are out of this kustomize package.
 # It should be run by config/default
 resources:
-- bases/polyaxon.com_operations.yaml
+- bases/polyaxon.com_clusters.yaml
+- bases/polyaxon.com_jobs.yaml
+- bases/polyaxon.com_kfjobs.yaml
+- bases/polyaxon.com_services.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patches:

@@ -1,7 +1,7 @@
 # Image URL to use all building/pushing image targets
 IMAGE_NAME ?= polyaxon/polyaxon-operator
 RELEASE_VERSION ?= latest
-IMG ?= controller:latest
+IMG ?= ${IMAGE_NAME}:${RELEASE_VERSION}
 # Produce CRDs
 CRD_OPTIONS ?= "crd:maxDescLen=0"
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
@@ -145,14 +145,14 @@ docker-buildx: ## Build and push docker image for the manager for cross-platform
 	sed -e '1 s/\(^FROM\)/FROM --platform=\$$\{BUILDPLATFORM\}/; t' -e ' 1,// s//FROM --platform=\$$\{BUILDPLATFORM\}/' Dockerfile > Dockerfile.cross
 	- $(CONTAINER_TOOL) buildx create --name mloperator-builder
 	$(CONTAINER_TOOL) buildx use mloperator-builder
-	- $(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --tag ${IMG} -f Dockerfile.cross .
+	- $(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --tag ${IMAGE_NAME}:${RELEASE_VERSION} -f Dockerfile.cross .
 	- $(CONTAINER_TOOL) buildx rm mloperator-builder
 	rm Dockerfile.cross
 
 .PHONY: build-installer
 build-installer: manifests generate kustomize ## Generate a consolidated YAML with CRDs and deployment.
 	mkdir -p dist
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMAGE_NAME}:${RELEASE_VERSION}
 	$(KUSTOMIZE) build config/default > dist/install.yaml
 
 ##@ Deployment
