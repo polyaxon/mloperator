@@ -120,7 +120,7 @@ type RunPolicy struct {
 	SchedulingPolicy *apiv1.SchedulingPolicy `json:"schedulingPolicy,omitempty"`
 }
 
-// MPIJobSpec resource definiton.
+// MPIJobSpec resource definition.
 type MPIJobSpec struct {
 	SlotsPerWorker  *int32                                        `json:"slotsPerWorker,omitempty"`
 	RunPolicy       RunPolicy                                     `json:"runPolicy,omitempty"`

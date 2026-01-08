@@ -93,7 +93,7 @@ func GenerateDeployment(
 
 	// Check container
 	if len(spec.Containers) == 0 {
-		return nil, fmt.Errorf("Service deployment has no container in Spec %q", &spec)
+		return nil, fmt.Errorf("service deployment has no container in Spec %q", &spec)
 	}
 	container := &spec.Containers[0]
 

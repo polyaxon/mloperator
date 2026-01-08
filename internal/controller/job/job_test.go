@@ -303,7 +303,7 @@ var _ = Describe("Job Controller - Deleted Job Detection", func() {
 			// Verify no status change and job not created
 			updatedInstance := &apiv1.Job{}
 			Expect(fakeClient.Get(ctx, types.NamespacedName{Name: "test-job-succeeded", Namespace: testNamespace}, updatedInstance)).To(Succeed())
-			Expect(len(updatedInstance.Status.Conditions)).To(Equal(initialConditionsLen))
+			Expect(updatedInstance.Status.Conditions).To(HaveLen(initialConditionsLen))
 			Expect(updatedInstance.Status.IsSucceeded()).To(BeTrue())
 
 			// Verify job was not created

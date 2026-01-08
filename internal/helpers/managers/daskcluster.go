@@ -135,7 +135,7 @@ func GenerateDaskAutoscaler(
 	autoscalerManifest, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&autoscaler.Spec)
 
 	if err != nil {
-		return nil, fmt.Errorf("convert DaskAutoscaler to unstructured error: %v", err)
+		return nil, fmt.Errorf("sonvert DaskAutoscaler to unstructured error: %v", err)
 	}
 
 	if err := unstructured.SetNestedField(autoscalerResource.Object, autoscalerManifest, "spec"); err != nil {

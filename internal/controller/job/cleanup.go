@@ -58,7 +58,7 @@ func (r *JobReconciler) handlePastActiveDeadline(ctx context.Context, instance *
 		return nil, nil
 	}
 	currentTime := metav1.Now()
-	duration := currentTime.Time.Sub(startTime.Time)
+	duration := currentTime.Sub(startTime.Time)
 	allowedDuration := time.Second * time.Duration(*activeDeadlineSeconds)
 	if duration >= allowedDuration {
 		log.V(1).Info("Cleanup triggered based on ActiveDeadlineSeconds")

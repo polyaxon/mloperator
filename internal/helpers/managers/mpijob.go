@@ -49,11 +49,11 @@ func GenerateMPIJob(
 	jobManifest, err := runtime.DefaultUnstructuredConverter.ToUnstructured(jobSpec)
 
 	if err != nil {
-		return nil, fmt.Errorf("Convert mpijob to unstructured error: %v", err)
+		return nil, fmt.Errorf("convert mpijob to unstructured error: %v", err)
 	}
 
 	if err := unstructured.SetNestedField(job.Object, jobManifest, "spec"); err != nil {
-		return nil, fmt.Errorf("Set .spec.hosts error: %v", err)
+		return nil, fmt.Errorf("set .spec.hosts error: %v", err)
 	}
 
 	return job, nil

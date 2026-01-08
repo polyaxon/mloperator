@@ -137,7 +137,10 @@ func (r *ServiceReconciler) reconcileDeploymentStatus(instance *apiv1.Service, d
 	log := r.Log
 
 	// Check the pods
-	instanceID, _ := instance.ObjectMeta.Labels["app.kubernetes.io/instance"]
+	instanceID, ok := instance.Labels["app.kubernetes.io/instance"]
+	if !ok {
+		return false
+	}
 	podStatus, reason, message := managers.HasUnschedulablePods(r.Client, instanceID, instance.Namespace)
 	if podStatus == apiv1.OperationWarning || podStatus == apiv1.OperationFailed {
 		log.V(1).Info("Service has unschedulable pod(s)", "Reason", reason, "message", message)
@@ -228,7 +231,7 @@ func (r *ServiceReconciler) handleServiceBackoffLimit(ctx context.Context, insta
 	}
 	lastTransitionTime := instance.Status.Conditions[len(instance.Status.Conditions)-1].LastTransitionTime
 	currentTime := metav1.Now()
-	duration := currentTime.Time.Sub(lastTransitionTime.Time)
+	duration := currentTime.Sub(lastTransitionTime.Time)
 
 	if duration >= r.getBackOff(*backoffLimit) {
 		log.V(1).Info("Cleanup triggered based on ActiveDeadlineSeconds")
@@ -324,7 +327,7 @@ func (r *ServiceReconciler) checkHttpActivity(ctx context.Context, instance *api
 	} else {
 		// Default to first service port
 		ports := managers.GetPodPorts(instance.ServiceSpec.Template.Spec, managers.DefaultTargetPort)
-		if instance.ServiceSpec.Ports != nil && len(instance.ServiceSpec.Ports) > 0 {
+		if len(instance.ServiceSpec.Ports) > 0 {
 			ports = instance.ServiceSpec.Ports
 		}
 
@@ -339,17 +342,15 @@ func (r *ServiceReconciler) checkHttpActivity(ctx context.Context, instance *api
 	if path == "" {
 		path = "/api/status"
 	}
-	if strings.HasSuffix(path, "/") {
-		path = strings.TrimSuffix(path, "/")
-	}
+	path = strings.TrimSuffix(path, "/")
 
 	// Access service directly - Jupyter is configured with base_url matching the proxy path
 	host := fmt.Sprintf("%s.%s.svc.cluster.local", serviceName, instance.Namespace)
 
 	// Get instance UUID from label
 	instanceID := ""
-	if instance.ObjectMeta.Labels != nil {
-		instanceID = instance.ObjectMeta.Labels["app.kubernetes.io/instance"]
+	if instance.Labels != nil {
+		instanceID = instance.Labels["app.kubernetes.io/instance"]
 	}
 	if instanceID == "" {
 		return time.Time{}, fmt.Errorf("missing required label app.kubernetes.io/instance")
@@ -388,7 +389,7 @@ func (r *ServiceReconciler) checkHttpActivity(ctx context.Context, instance *api
 		log.Error(err, "HTTP request failed", "url", url, "timeout", client.Timeout)
 		return time.Time{}, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	log.V(1).Info("HTTP response received", "status", resp.StatusCode, "url", url)
 

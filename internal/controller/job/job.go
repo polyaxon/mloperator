@@ -105,7 +105,10 @@ func (r *JobReconciler) reconcileJobStatus(instance *apiv1.Job, job batchv1.Job)
 	log := r.Log
 
 	// Check the pods
-	instanceID, _ := instance.ObjectMeta.Labels["app.kubernetes.io/instance"]
+	instanceID, ok := instance.Labels["app.kubernetes.io/instance"]
+	if !ok {
+		return false
+	}
 	podStatus, reason, message := managers.HasUnschedulablePods(r.Client, instanceID, instance.Namespace)
 	if podStatus == apiv1.OperationWarning {
 		if updated := instance.Status.LogWarning(reason, message); updated {

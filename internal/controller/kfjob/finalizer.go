@@ -26,7 +26,7 @@ func (r *KfJobReconciler) handleFinalizers(ctx context.Context, instance *apiv1.
 
 	if !instance.Status.IsDone() {
 		log.Info("Instance was probably stopped", "Append final status", "Stopping")
-		r.syncStatus(
+		_ = r.syncStatus(
 			instance,
 			apiv1.NewOperationCondition(
 				apiv1.OperationStopped,

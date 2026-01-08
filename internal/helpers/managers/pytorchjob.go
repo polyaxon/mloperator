@@ -48,11 +48,11 @@ func GeneratePytorchJob(
 	jobManifest, err := runtime.DefaultUnstructuredConverter.ToUnstructured(jobSpec)
 
 	if err != nil {
-		return nil, fmt.Errorf("Convert pytorchjob to unstructured error: %v", err)
+		return nil, fmt.Errorf("convert pytorchjob to unstructured error: %v", err)
 	}
 
 	if err := unstructured.SetNestedField(job.Object, jobManifest, "spec"); err != nil {
-		return nil, fmt.Errorf("Set .spec.hosts error: %v", err)
+		return nil, fmt.Errorf("set .spec.hosts error: %v", err)
 	}
 
 	return job, nil

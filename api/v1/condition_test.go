@@ -293,7 +293,7 @@ var _ = Describe("OperationStatus Deletion Utility Functions", func() {
 
 				Expect(updated).To(BeTrue())
 				Expect(status.IsFailed()).To(BeTrue())
-				Expect(len(status.Conditions)).To(Equal(1))
+				Expect(status.Conditions).To(HaveLen(1))
 			})
 		})
 	})

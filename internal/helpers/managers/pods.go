@@ -25,13 +25,13 @@ func GetPodPorts(podSpec corev1.PodSpec, defaultPort int) []int32 {
 	return ports
 }
 
-func getPodLastTime(pod *corev1.Pod, lastTime *time.Time) (bool, *time.Time, error) {
-	timeRaw := pod.ObjectMeta.CreationTimestamp.Time
+func getPodLastTime(pod *corev1.Pod, lastTime *time.Time) (bool, *time.Time) {
+	timeRaw := pod.CreationTimestamp.Time
 	if lastTime == nil || lastTime.Before(timeRaw) {
-		return true, &timeRaw, nil
+		return true, &timeRaw
 	}
 
-	return false, lastTime, nil
+	return false, lastTime
 }
 
 // GetLastPod returns the last pod bassed on the creation time of the items
@@ -41,7 +41,7 @@ func GetLastPod(pods corev1.PodList) (*corev1.Pod, error) {
 	isLast := false
 	var err error
 	for _, pod := range pods.Items {
-		isLast, lastTime, err = getPodLastTime(&pod, lastTime)
+		isLast, lastTime = getPodLastTime(&pod, lastTime)
 		if err != nil {
 			return nil, err
 		}
@@ -70,10 +70,10 @@ func ListPods(controllerClient client.Client, namespace string, selector map[str
 
 // HasUnschedulablePods Detects if entity has unschedulable pods
 func HasUnschedulablePods(controllerClient client.Client, instanceID string, namespace string) (apiv1.OperationConditionType, string, string) {
-	labels := map[string]string{
+	_labels := map[string]string{
 		"app.kubernetes.io/instance": instanceID,
 	}
-	podsList, err := ListPods(controllerClient, namespace, labels)
+	podsList, err := ListPods(controllerClient, namespace, _labels)
 	if err != nil || len(podsList.Items) < 1 {
 		return apiv1.OperationStarting, "PodNotReady", "Operation has no pods yet."
 	}
@@ -92,13 +92,13 @@ func HasUnschedulablePods(controllerClient client.Client, instanceID string, nam
 		if pod.Status.Phase != corev1.PodRunning && pod.Status.Conditions != nil {
 			if pod.Status.InitContainerStatuses != nil {
 				for _, cs := range pod.Status.InitContainerStatuses {
-					if cs.Ready == false && cs.State.Waiting != nil && cs.State.Waiting.Reason == "ImagePullBackOff" {
+					if !cs.Ready && cs.State.Waiting != nil && cs.State.Waiting.Reason == "ImagePullBackOff" {
 						return apiv1.OperationWarning, "InitContainerImagePullBackOff", cs.State.Waiting.Message
 					}
 				}
 			}
 			for _, cs := range pod.Status.ContainerStatuses {
-				if cs.Ready == false && cs.State.Waiting != nil && cs.State.Waiting.Reason == "ImagePullBackOff" {
+				if !cs.Ready && cs.State.Waiting != nil && cs.State.Waiting.Reason == "ImagePullBackOff" {
 					return apiv1.OperationWarning, "ImagePullBackOff", cs.State.Waiting.Message
 				}
 			}

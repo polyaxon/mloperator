@@ -72,12 +72,12 @@ var _ = Describe("Job", func() {
 			Expect(IsOperationBeingDeleted(op)).To(BeTrue())
 
 			controllerutil.AddFinalizer(op, OperationLogsFinalizer)
-			Expect(len(op.GetFinalizers())).To(Equal(1))
+			Expect(op.GetFinalizers()).To(HaveLen(1))
 			Expect(controllerutil.ContainsFinalizer(op, OperationLogsFinalizer)).To(BeTrue())
 			Expect(containsString(op.ObjectMeta.Finalizers, OperationLogsFinalizer)).To(BeTrue())
 
 			controllerutil.RemoveFinalizer(op, OperationLogsFinalizer)
-			Expect(len(op.GetFinalizers())).To(Equal(0))
+			Expect(op.GetFinalizers()).To(BeEmpty())
 			Expect(controllerutil.ContainsFinalizer(op, OperationLogsFinalizer)).To(BeFalse())
 		})
 
@@ -92,12 +92,12 @@ var _ = Describe("Job", func() {
 			Expect(IsOperationBeingDeleted(op)).To(BeTrue())
 
 			controllerutil.AddFinalizer(op, OperationStatusFinalizer)
-			Expect(len(op.GetFinalizers())).To(Equal(1))
+			Expect(op.GetFinalizers()).To(HaveLen(1))
 			Expect(controllerutil.ContainsFinalizer(op, OperationStatusFinalizer)).To(BeTrue())
 			Expect(containsString(op.ObjectMeta.Finalizers, OperationStatusFinalizer)).To(BeTrue())
 
 			controllerutil.RemoveFinalizer(op, OperationStatusFinalizer)
-			Expect(len(op.GetFinalizers())).To(Equal(0))
+			Expect(op.GetFinalizers()).To(BeEmpty())
 			Expect(controllerutil.ContainsFinalizer(op, OperationStatusFinalizer)).To(BeFalse())
 		})
 
@@ -113,13 +113,13 @@ var _ = Describe("Job", func() {
 
 			controllerutil.AddFinalizer(op, OperationLogsFinalizer)
 			controllerutil.AddFinalizer(op, OperationStatusFinalizer)
-			Expect(len(op.GetFinalizers())).To(Equal(2))
+			Expect(op.GetFinalizers()).To(HaveLen(2))
 			Expect(controllerutil.ContainsFinalizer(op, OperationStatusFinalizer)).To(BeTrue())
 			Expect(controllerutil.ContainsFinalizer(op, OperationLogsFinalizer)).To(BeTrue())
 
 			controllerutil.RemoveFinalizer(op, OperationStatusFinalizer)
 			controllerutil.RemoveFinalizer(op, OperationLogsFinalizer)
-			Expect(len(op.GetFinalizers())).To(Equal(0))
+			Expect(op.GetFinalizers()).To(BeEmpty())
 			Expect(controllerutil.ContainsFinalizer(op, OperationStatusFinalizer)).To(BeFalse())
 			Expect(controllerutil.ContainsFinalizer(op, OperationLogsFinalizer)).To(BeFalse())
 		})

@@ -38,13 +38,13 @@ func CopyUnstructuredField(from, to *unstructured.Unstructured, field string) bo
 
 	toSpec, found, err := unstructured.NestedMap(to.Object, field)
 	if !found || err != nil {
-		unstructured.SetNestedMap(to.Object, fromSpec, field)
+		_ = unstructured.SetNestedMap(to.Object, fromSpec, field)
 		return true
 	}
 
 	requiresUpdate := !reflect.DeepEqual(fromSpec, toSpec)
 	if requiresUpdate {
-		unstructured.SetNestedMap(to.Object, fromSpec, field)
+		_ = unstructured.SetNestedMap(to.Object, fromSpec, field)
 	}
 	return requiresUpdate
 }

@@ -27,7 +27,7 @@ var _ = Describe("Config", func() {
 		})
 
 		It("Config texts should get from envs", func() {
-			os.Setenv("TEST", "foo")
+			_ = os.Setenv("TEST", "foo")
 			Expect(GetStrEnv("TEST", "")).To(BeIdenticalTo("foo"))
 			Expect(GetStrEnv("TEST", "test")).To(BeIdenticalTo("foo"))
 		})
@@ -38,11 +38,11 @@ var _ = Describe("Config", func() {
 		})
 
 		It("Config bool should get from envs", func() {
-			os.Setenv("TEST", "true")
+			_ = os.Setenv("TEST", "true")
 			Expect(GetBoolEnv("TEST", false)).To(BeTrue())
 			Expect(GetBoolEnv("TEST", true)).To(BeTrue())
 
-			os.Setenv("TEST", "false")
+			_ = os.Setenv("TEST", "false")
 			Expect(GetBoolEnv("TEST", false)).To(BeFalse())
 			Expect(GetBoolEnv("TEST", true)).To(BeFalse())
 		})
@@ -53,7 +53,7 @@ var _ = Describe("Config", func() {
 		})
 
 		It("Config int should get from envs", func() {
-			os.Setenv("TEST", "100")
+			_ = os.Setenv("TEST", "100")
 			Expect(GetIntEnv("TEST", 0)).To(BeIdenticalTo(100))
 			Expect(GetIntEnv("TEST", 10)).To(BeIdenticalTo(100))
 		})

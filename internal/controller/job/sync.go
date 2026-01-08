@@ -18,22 +18,22 @@ func (r *JobReconciler) instanceSyncStatus(instance *apiv1.Job) error {
 }
 
 func (r *JobReconciler) getInstanceInfo(instance *apiv1.Job) (string, string, string, string, bool) {
-	instanceID, ok := instance.ObjectMeta.Labels["app.kubernetes.io/instance"]
+	instanceID, ok := instance.Labels["app.kubernetes.io/instance"]
 	if !ok || instanceID == "" {
 		return "", "", "", "", false
 	}
 
-	instanceOwner, ok := instance.ObjectMeta.Annotations["operation.polyaxon.com/owner"]
+	instanceOwner, ok := instance.Annotations["operation.polyaxon.com/owner"]
 	if !ok || instanceOwner == "" {
 		return "", "", "", "", false
 	}
 
-	instanceProject, ok := instance.ObjectMeta.Annotations["operation.polyaxon.com/project"]
+	instanceProject, ok := instance.Annotations["operation.polyaxon.com/project"]
 	if !ok || instanceProject == "" {
 		return "", "", "", "", false
 	}
 
-	instanceKind, ok := instance.ObjectMeta.Annotations["operation.polyaxon.com/kind"]
+	instanceKind, ok := instance.Annotations["operation.polyaxon.com/kind"]
 	if !ok || instanceKind == "" {
 		instanceKind = "operation" // backward compatibility
 	}

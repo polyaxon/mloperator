@@ -162,11 +162,11 @@ func GenerateRayCluster(
 
 	clusterManifest, err := runtime.DefaultUnstructuredConverter.ToUnstructured(clusterSpec)
 	if err != nil {
-		return nil, fmt.Errorf("Convert raycluster to unstructured error: %v", err)
+		return nil, fmt.Errorf("convert raycluster to unstructured error: %v", err)
 	}
 
 	if err := unstructured.SetNestedField(cluster.Object, clusterManifest, "spec"); err != nil {
-		return nil, fmt.Errorf("Set .spec error: %v", err)
+		return nil, fmt.Errorf("set .spec error: %v", err)
 	}
 
 	return cluster, nil

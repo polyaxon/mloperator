@@ -34,14 +34,14 @@ func GenerateVirtualService(name, namespace string) (*unstructured.Unstructured,
 	virtualService.SetName(name)
 	virtualService.SetNamespace(namespace)
 	if err := unstructured.SetNestedStringSlice(virtualService.Object, []string{"*"}, "spec", "hosts"); err != nil {
-		return nil, fmt.Errorf("Set .spec.hosts error: %v", err)
+		return nil, fmt.Errorf("set .spec.hosts error: %v", err)
 	}
 
 	istioGateway := config.GetStrEnv(config.IstioGateway, "polyaxon/mloperator-gateway")
 
 	if err := unstructured.SetNestedStringSlice(virtualService.Object, []string{istioGateway},
 		"spec", "gateways"); err != nil {
-		return nil, fmt.Errorf("Set .spec.gateways error: %v", err)
+		return nil, fmt.Errorf("set .spec.gateways error: %v", err)
 	}
 
 	http := []interface{}{
@@ -70,7 +70,7 @@ func GenerateVirtualService(name, namespace string) (*unstructured.Unstructured,
 		},
 	}
 	if err := unstructured.SetNestedSlice(virtualService.Object, http, "spec", "http"); err != nil {
-		return nil, fmt.Errorf("Set .spec.http error: %v", err)
+		return nil, fmt.Errorf("set .spec.http error: %v", err)
 	}
 
 	return virtualService, nil
