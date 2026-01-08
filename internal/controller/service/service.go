@@ -100,14 +100,14 @@ func (r *ServiceReconciler) reconcileDeployment(ctx context.Context, instance *a
 				if statusErr := r.Status().Update(ctx, instance); statusErr != nil {
 					return statusErr
 				}
-				r.instanceSyncStatus(instance)
+				_ = r.instanceSyncStatus(instance)
 			}
 			return err
 		}
 		justCreated = true
 		instance.Status.LogStarting()
 		err = r.Status().Update(ctx, instance)
-		r.instanceSyncStatus(instance)
+		_ = r.instanceSyncStatus(instance)
 	} else if err != nil {
 		return err
 	}
@@ -127,7 +127,7 @@ func (r *ServiceReconciler) reconcileDeployment(ctx context.Context, instance *a
 		if err != nil {
 			return err
 		}
-		r.instanceSyncStatus(instance)
+		_ = r.instanceSyncStatus(instance)
 	}
 
 	return nil
@@ -194,7 +194,7 @@ func (r *ServiceReconciler) reconcileBaseService(ctx context.Context, instance *
 				if statusErr := r.Status().Update(ctx, instance); statusErr != nil {
 					return statusErr
 				}
-				r.instanceSyncStatus(instance)
+				_ = r.instanceSyncStatus(instance)
 			}
 			return err
 		}

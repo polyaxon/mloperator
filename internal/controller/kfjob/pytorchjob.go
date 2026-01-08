@@ -59,7 +59,7 @@ func (r *KfJobReconciler) reconcilePytorchJob(ctx context.Context, instance *api
 				if statusErr := r.Status().Update(ctx, instance); statusErr != nil {
 					return statusErr
 				}
-				r.instanceSyncStatus(instance)
+				_ = r.instanceSyncStatus(instance)
 			}
 			return nil
 		}
@@ -73,14 +73,14 @@ func (r *KfJobReconciler) reconcilePytorchJob(ctx context.Context, instance *api
 				if statusErr := r.Status().Update(ctx, instance); statusErr != nil {
 					return statusErr
 				}
-				r.instanceSyncStatus(instance)
+				_ = r.instanceSyncStatus(instance)
 			}
 			return err
 		}
 		justCreated = true
 		instance.Status.LogStarting()
 		err = r.Status().Update(ctx, instance)
-		r.instanceSyncStatus(instance)
+		_ = r.instanceSyncStatus(instance)
 	} else if err != nil {
 		return err
 	}
@@ -109,7 +109,7 @@ func (r *KfJobReconciler) reconcilePytorchJob(ctx context.Context, instance *api
 		if err != nil {
 			return err
 		}
-		r.instanceSyncStatus(instance)
+		_ = r.instanceSyncStatus(instance)
 	}
 
 	return nil

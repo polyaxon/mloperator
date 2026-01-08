@@ -53,7 +53,7 @@ func (r *JobReconciler) reconcileJob(ctx context.Context, instance *apiv1.Job) e
 				if statusErr := r.Status().Update(ctx, instance); statusErr != nil {
 					return statusErr
 				}
-				r.instanceSyncStatus(instance)
+				_ = r.instanceSyncStatus(instance)
 			}
 			return nil
 		}
@@ -66,14 +66,14 @@ func (r *JobReconciler) reconcileJob(ctx context.Context, instance *apiv1.Job) e
 				if statusErr := r.Status().Update(ctx, instance); statusErr != nil {
 					return statusErr
 				}
-				r.instanceSyncStatus(instance)
+				_ = r.instanceSyncStatus(instance)
 			}
 			return err
 		}
 		justCreated = true
 		instance.Status.LogStarting()
 		err = r.Status().Update(ctx, instance)
-		r.instanceSyncStatus(instance)
+		_ = r.instanceSyncStatus(instance)
 	}
 	if err != nil {
 		return err
@@ -94,7 +94,7 @@ func (r *JobReconciler) reconcileJob(ctx context.Context, instance *apiv1.Job) e
 		if err != nil {
 			return err
 		}
-		r.instanceSyncStatus(instance)
+		_ = r.instanceSyncStatus(instance)
 	}
 
 	return nil

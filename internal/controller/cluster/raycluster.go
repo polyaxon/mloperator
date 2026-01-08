@@ -70,7 +70,7 @@ func (r *ClusterReconciler) reconcileRayCluster(ctx context.Context, instance *a
 					if statusErr := r.Status().Update(ctx, instance); statusErr != nil {
 						return statusErr
 					}
-					r.instanceSyncStatus(instance)
+					_ = r.instanceSyncStatus(instance)
 				}
 			} else {
 				// Job already in terminal state (Succeeded/Failed), keep it
@@ -92,7 +92,7 @@ func (r *ClusterReconciler) reconcileRayCluster(ctx context.Context, instance *a
 				if statusErr := r.Status().Update(ctx, instance); statusErr != nil {
 					return statusErr
 				}
-				r.instanceSyncStatus(instance)
+				_ = r.instanceSyncStatus(instance)
 			}
 			return err
 		}
@@ -107,7 +107,7 @@ func (r *ClusterReconciler) reconcileRayCluster(ctx context.Context, instance *a
 
 		instance.Status.LogStarting()
 		err = r.Status().Update(ctx, instance)
-		r.instanceSyncStatus(instance)
+		_ = r.instanceSyncStatus(instance)
 	} else if err != nil {
 		return err
 	}
@@ -136,7 +136,7 @@ func (r *ClusterReconciler) reconcileRayCluster(ctx context.Context, instance *a
 		if err != nil {
 			return err
 		}
-		r.instanceSyncStatus(instance)
+		_ = r.instanceSyncStatus(instance)
 	}
 
 	return nil

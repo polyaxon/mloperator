@@ -71,7 +71,7 @@ func (r *ClusterReconciler) reconcileDaskCluster(ctx context.Context, instance *
 						log.Error(statusErr, "Failed to update status after marking as stopped")
 						return statusErr
 					}
-					r.instanceSyncStatus(instance)
+					_ = r.instanceSyncStatus(instance)
 				}
 			} else {
 				// Cluster already in terminal state (Succeeded/Failed), keep it
@@ -94,7 +94,7 @@ func (r *ClusterReconciler) reconcileDaskCluster(ctx context.Context, instance *
 				if statusErr := r.Status().Update(ctx, instance); statusErr != nil {
 					return statusErr
 				}
-				r.instanceSyncStatus(instance)
+				_ = r.instanceSyncStatus(instance)
 			}
 			return err
 		}
@@ -109,7 +109,7 @@ func (r *ClusterReconciler) reconcileDaskCluster(ctx context.Context, instance *
 
 		instance.Status.LogStarting()
 		err = r.Status().Update(ctx, instance)
-		r.instanceSyncStatus(instance)
+		_ = r.instanceSyncStatus(instance)
 	} else if err != nil {
 		return err
 	}
@@ -138,7 +138,7 @@ func (r *ClusterReconciler) reconcileDaskCluster(ctx context.Context, instance *
 		if err != nil {
 			return err
 		}
-		r.instanceSyncStatus(instance)
+		_ = r.instanceSyncStatus(instance)
 	}
 
 	return nil

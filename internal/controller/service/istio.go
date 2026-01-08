@@ -44,7 +44,7 @@ func (r *ServiceReconciler) reconcileVirtualService(ctx context.Context, instanc
 				if statusErr := r.Status().Update(ctx, instance); statusErr != nil {
 					return statusErr
 				}
-				r.instanceSyncStatus(instance)
+				_ = r.instanceSyncStatus(instance)
 			}
 			return err
 		}

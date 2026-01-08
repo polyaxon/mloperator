@@ -67,7 +67,7 @@ func (r *KfJobReconciler) handlePastActiveDeadline(ctx context.Context, instance
 			if statusErr := r.Status().Update(ctx, instance); statusErr != nil {
 				return nil, statusErr
 			}
-			r.instanceSyncStatus(instance)
+			_ = r.instanceSyncStatus(instance)
 		}
 		return nil, r.delete(ctx, instance)
 	}
