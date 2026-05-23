@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"math"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -81,13 +80,4 @@ func (r *ServiceReconciler) handlePastActiveDeadline(ctx context.Context, instan
 	}
 
 	return nil, nil
-}
-
-func (r *ServiceReconciler) getBackOff(backOff int32) time.Duration {
-	// The backoff is capped such that 'calculated' value never overflows.
-	delay := float64(1) * math.Pow(2, float64(backOff))
-	if delay > math.MaxInt64 {
-		return utils.MaxBackOff
-	}
-	return time.Duration(delay)
 }

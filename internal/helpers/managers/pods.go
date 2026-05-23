@@ -2,6 +2,7 @@ package managers
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -11,6 +12,24 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+type MainContainerExitStatus struct {
+	PodName         string
+	ContainerName   string
+	ExitCode        int32
+	Reason          string
+	Message         string
+	RestartCount    int32
+	currentExitSeen bool
+}
+
+func (status MainContainerExitStatus) ContainerFailedAttempts() int32 {
+	attempts := status.RestartCount
+	if status.currentExitSeen {
+		attempts++
+	}
+	return attempts
+}
 
 // GetPodPorts returns the pod's port from the container definition
 func GetPodPorts(podSpec corev1.PodSpec, defaultPort int) []int32 {
@@ -66,6 +85,95 @@ func ListPods(controllerClient client.Client, namespace string, selector map[str
 
 	podList := &corev1.PodList{}
 	return podList, controllerClient.List(context.TODO(), podList, opt...)
+}
+
+func getPodMainContainerExitStatus(pod corev1.Pod) *MainContainerExitStatus {
+	if len(pod.Status.ContainerStatuses) == 0 {
+		return nil
+	}
+
+	containerName := pod.Status.ContainerStatuses[0].Name
+	if len(pod.Spec.Containers) > 0 {
+		containerName = pod.Spec.Containers[0].Name
+	}
+
+	var containerStatus *corev1.ContainerStatus
+	for i := range pod.Status.ContainerStatuses {
+		if pod.Status.ContainerStatuses[i].Name == containerName {
+			containerStatus = &pod.Status.ContainerStatuses[i]
+			break
+		}
+	}
+	if containerStatus == nil {
+		return nil
+	}
+
+	currentExitSeen := false
+	var termination *corev1.ContainerStateTerminated
+	if containerStatus.State.Terminated != nil {
+		termination = containerStatus.State.Terminated
+		currentExitSeen = true
+	} else if containerStatus.State.Running != nil {
+		lastTermination := containerStatus.LastTerminationState.Terminated
+		if lastTermination != nil && lastTermination.ExitCode != 0 {
+			termination = lastTermination
+		}
+	} else if containerStatus.State.Waiting != nil {
+		// Waiting with a previous clean exit is unusual, but means the pod is not healthy now.
+		// Keep honoring it so single-container command services can complete cleanly.
+		termination = containerStatus.LastTerminationState.Terminated
+	}
+	if termination == nil {
+		return nil
+	}
+
+	return &MainContainerExitStatus{
+		PodName:         pod.Name,
+		ContainerName:   containerName,
+		ExitCode:        termination.ExitCode,
+		Reason:          termination.Reason,
+		Message:         termination.Message,
+		RestartCount:    containerStatus.RestartCount,
+		currentExitSeen: currentExitSeen,
+	}
+}
+
+func GetMainContainerExitStatus(pods corev1.PodList) *MainContainerExitStatus {
+	var failedStatus *MainContainerExitStatus
+	var succeededStatus *MainContainerExitStatus
+	for _, pod := range pods.Items {
+		status := getPodMainContainerExitStatus(pod)
+		if status == nil {
+			continue
+		}
+		if status.ExitCode == 0 {
+			if succeededStatus == nil {
+				succeededStatus = status
+			}
+			continue
+		}
+		if failedStatus == nil || status.ContainerFailedAttempts() > failedStatus.ContainerFailedAttempts() {
+			failedStatus = status
+		}
+	}
+	if failedStatus != nil {
+		return failedStatus
+	}
+	return succeededStatus
+}
+
+func GetMainContainerExitStatusByInstance(controllerClient client.Client, instanceID string, namespace string) (*MainContainerExitStatus, error) {
+	selector := map[string]string{
+		"app.kubernetes.io/instance": instanceID,
+	}
+	podsList, err := ListPods(controllerClient, namespace, selector)
+	if err != nil {
+		return nil, fmt.Errorf("list pods: %w", err)
+	}
+	if len(podsList.Items) == 0 {
+		return nil, nil
+	}
+	return GetMainContainerExitStatus(*podsList), nil
 }
 
 // HasUnschedulablePods Detects if entity has unschedulable pods

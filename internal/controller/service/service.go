@@ -45,19 +45,18 @@ func (r *ServiceReconciler) reconcileService(ctx context.Context, instance *apiv
 		return ctrl.Result{Requeue: true, RequeueAfter: *duration}, nil
 	}
 
+	if done, err := r.handleServiceContainerExit(ctx, instance); err != nil || done {
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{Requeue: true}, nil
+	}
+
 	if duration, err := r.handleCulling(ctx, instance); err != nil || duration != nil {
 		if err != nil {
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{Requeue: true, RequeueAfter: *duration}, nil
-	}
-
-	if instance.Status.IsWarning() {
-		if err := r.handleServiceBackoffLimit(ctx, instance); err != nil {
-			return ctrl.Result{}, err
-		}
-		// log.V(1).Info("service has warning", "Reschdule check in", 30)
-		// return ctrl.Result{Requeue: true, RequeueAfter: time.Second * time.Duration(30)}, nil
 	}
 
 	return ctrl.Result{}, nil
@@ -221,24 +220,75 @@ func (r *ServiceReconciler) cleanUpService(ctx context.Context, instance *apiv1.
 	return r.handleTTL(ctx, instance)
 }
 
-// handleServiceBackoffLimit checks if service has BackoffLimit and translate it to a warning duration with back-off limit
-func (r *ServiceReconciler) handleServiceBackoffLimit(ctx context.Context, instance *apiv1.Service) error {
+func (r *ServiceReconciler) handleServiceContainerExit(ctx context.Context, instance *apiv1.Service) (bool, error) {
 	log := r.Log
 
-	backoffLimit := instance.Termination.BackoffLimit
-	if backoffLimit == nil {
-		return nil
-	}
-	lastTransitionTime := instance.Status.Conditions[len(instance.Status.Conditions)-1].LastTransitionTime
-	currentTime := metav1.Now()
-	duration := currentTime.Sub(lastTransitionTime.Time)
-
-	if duration >= r.getBackOff(*backoffLimit) {
-		log.V(1).Info("Cleanup triggered based on ActiveDeadlineSeconds")
-		return r.delete(ctx, instance)
+	instanceID, ok := instance.Labels["app.kubernetes.io/instance"]
+	if !ok {
+		return false, nil
 	}
 
-	return nil
+	exitStatus, err := managers.GetMainContainerExitStatusByInstance(r.Client, instanceID, instance.Namespace)
+	if err != nil || exitStatus == nil {
+		return false, err
+	}
+
+	replicas := int32(managers.DefaultServiceReplicas)
+	if instance.ServiceSpec != nil {
+		replicas = managers.GetReplicas(managers.DefaultServiceReplicas, *instance.ServiceSpec)
+	}
+
+	now := metav1.Now()
+	// Multi-replica services do not have unambiguous completion semantics.
+	if replicas == 1 && exitStatus.ExitCode == 0 {
+		if updated := instance.Status.LogSucceeded(); updated {
+			instance.Status.CompletionTime = &now
+			log.Info("Service main container succeeded", "pod", exitStatus.PodName, "container", exitStatus.ContainerName)
+			if statusErr := r.Status().Update(ctx, instance); statusErr != nil {
+				return false, statusErr
+			}
+			_ = r.instanceSyncStatus(instance)
+		}
+		return true, nil
+	}
+
+	if exitStatus.ExitCode == 0 {
+		return false, nil
+	}
+
+	backoffLimit := int32(0)
+	if instance.Termination.BackoffLimit != nil {
+		backoffLimit = *instance.Termination.BackoffLimit
+	}
+	if backoffLimit < 0 || exitStatus.ContainerFailedAttempts() <= backoffLimit {
+		return false, nil
+	}
+
+	reason := exitStatus.Reason
+	if reason == "" {
+		reason = "ContainerFailed"
+	}
+	message := fmt.Sprintf(
+		"Main container %q in pod %q exited with code %d after %d failed attempt(s), exceeding maxRetries %d",
+		exitStatus.ContainerName,
+		exitStatus.PodName,
+		exitStatus.ExitCode,
+		exitStatus.ContainerFailedAttempts(),
+		backoffLimit,
+	)
+	if exitStatus.Message != "" {
+		message = fmt.Sprintf("%s: %s", message, exitStatus.Message)
+	}
+	if updated := instance.Status.LogFailed(reason, message); updated {
+		instance.Status.CompletionTime = &now
+		log.Info("Service main container exceeded retry budget", "pod", exitStatus.PodName, "container", exitStatus.ContainerName, "failedAttempts", exitStatus.ContainerFailedAttempts(), "maxRetries", backoffLimit)
+		if statusErr := r.Status().Update(ctx, instance); statusErr != nil {
+			return false, statusErr
+		}
+		_ = r.instanceSyncStatus(instance)
+	}
+
+	return true, nil
 }
 
 // handleCulling checks if the service is idle and should be culled
