@@ -104,12 +104,47 @@ func (r *JobReconciler) reconcileJobStatus(instance *apiv1.Job, job batchv1.Job)
 	now := metav1.Now()
 	log := r.Log
 
-	// Check the pods
-	instanceID, ok := instance.Labels["app.kubernetes.io/instance"]
-	if !ok {
-		return false
-	}
+	instanceID := instance.Labels["app.kubernetes.io/instance"]
 	podStatus, reason, message := managers.HasUnschedulablePods(r.Client, instanceID, instance.Namespace)
+	exitStatus, err := managers.GetMainContainerExitStatusByInstance(r.Client, instanceID, instance.Namespace)
+	if err != nil {
+		log.Error(err, "Get main container exit status error")
+	}
+
+	if len(job.Status.Conditions) > 0 {
+		newJobCond := job.Status.Conditions[len(job.Status.Conditions)-1]
+
+		if job.Status.Active == 0 && job.Status.Succeeded > 0 && managers.IsJobSucceeded(newJobCond) {
+			if updated := instance.Status.LogSucceeded(); updated {
+				instance.Status.CompletionTime = &now
+				log.Info("Job Logging Status Succeeded")
+				return true
+			}
+		}
+
+		if job.Status.CompletionTime != nil && job.Status.Succeeded > 0 && managers.IsJobSucceeded(newJobCond) {
+			if updated := instance.Status.LogSucceeded(); updated {
+				instance.Status.CompletionTime = &now
+				log.Info("Job Logging Status Succeeded with active non null")
+				return true
+			}
+		}
+
+		if job.Status.Failed > 0 && managers.IsJobFailed(newJobCond) {
+			failedAttempts := job.Status.Failed
+			var attemptPtr *int32
+			if failedAttempts > 0 {
+				attemptPtr = &failedAttempts
+			}
+			newMessage := managers.FormatMainContainerFailureMessage(newJobCond.Message, exitStatus, attemptPtr)
+			if updated := instance.Status.LogFailed(newJobCond.Reason, newMessage); updated {
+				instance.Status.CompletionTime = &now
+				log.Info("Job failed", "Reason", newJobCond.Reason, "Message", newMessage, "Failed", job.Status.Failed, "podStatus", podStatus)
+				return true
+			}
+		}
+	}
+
 	if podStatus == apiv1.OperationWarning {
 		if updated := instance.Status.LogWarning(reason, message); updated {
 			log.Info("Job has unschedulable pod(s)", "Reason", reason, "Message", message)
@@ -135,33 +170,6 @@ func (r *JobReconciler) reconcileJobStatus(instance *apiv1.Job, job batchv1.Job)
 			}
 		}
 		return false
-	}
-
-	newJobCond := job.Status.Conditions[len(job.Status.Conditions)-1]
-
-	if job.Status.Active == 0 && job.Status.Succeeded > 0 && managers.IsJobSucceeded(newJobCond) {
-		if updated := instance.Status.LogSucceeded(); updated {
-			instance.Status.CompletionTime = &now
-			log.Info("Job Logging Status Succeeded")
-			return true
-		}
-	}
-
-	if job.Status.CompletionTime != nil && job.Status.Succeeded > 0 && managers.IsJobSucceeded(newJobCond) {
-		if updated := instance.Status.LogSucceeded(); updated {
-			instance.Status.CompletionTime = &now
-			log.Info("Job Logging Status Succeeded with active non null")
-			return true
-		}
-	}
-
-	if job.Status.Failed > 0 && managers.IsJobFailed(newJobCond) {
-		newMessage := apiv1.GetFailureMessage(newJobCond.Message, podStatus, reason, message)
-		if updated := instance.Status.LogFailed(newJobCond.Reason, newMessage); updated {
-			instance.Status.CompletionTime = &now
-			log.Info("Job failed", "Reason", newJobCond.Reason, "Message", newMessage, "Failed", job.Status.Failed, "podStatus", podStatus)
-			return true
-		}
 	}
 	return false
 }

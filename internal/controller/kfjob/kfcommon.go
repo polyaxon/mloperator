@@ -43,10 +43,18 @@ func (r *KfJobReconciler) reconcileKfJobStatus(instance *apiv1.KfJob, job unstru
 	// Check the pods
 	instanceID := instance.Labels["app.kubernetes.io/instance"]
 	podStatus, reason, message := managers.HasUnschedulablePods(r.Client, instanceID, instance.Namespace)
-	if podStatus == apiv1.OperationWarning {
-		log.V(1).Info("Service has unschedulable pod(s)", "Reason", reason, "message", message)
+	exitStatus, err := managers.GetMainContainerExitStatusByInstance(r.Client, instanceID, instance.Namespace)
+	if err != nil {
+		log.Error(err, "Get main container exit status error")
+	}
+
+	logPodWarning := func() (bool, error) {
+		if podStatus != apiv1.OperationWarning {
+			return false, nil
+		}
+		log.V(1).Info("Job has unschedulable pod(s)", "Reason", reason, "message", message)
 		if updated := instance.Status.LogWarning(reason, message); updated {
-			log.V(1).Info("Service Logging Status Warning")
+			log.V(1).Info("Job Logging Status Warning")
 			return true, nil
 		}
 		return false, nil
@@ -60,19 +68,19 @@ func (r *KfJobReconciler) reconcileKfJobStatus(instance *apiv1.KfJob, job unstru
 		}
 		log.Info("NestedFieldCopy unstructured to status error",
 			"err", "Status is not found in job")
-		return false, nil
+		return logPodWarning()
 	}
 
 	statusMap := status.(map[string]interface{})
 	jobStatus := kfapi.JobStatus{}
-	err := runtime.DefaultUnstructuredConverter.FromUnstructured(statusMap, &jobStatus)
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(statusMap, &jobStatus)
 	if err != nil {
 		log.Error(err, "Convert unstructured to status error")
 		return false, err
 	}
 
 	if len(jobStatus.Conditions) == 0 {
-		return false, nil
+		return logPodWarning()
 	}
 
 	cond := jobStatus.Conditions[len(jobStatus.Conditions)-1]
@@ -91,12 +99,23 @@ func (r *KfJobReconciler) reconcileKfJobStatus(instance *apiv1.KfJob, job unstru
 	}
 
 	if cond.Type == kfapi.JobFailed {
-		newMessage := apiv1.GetFailureMessage(cond.Message, podStatus, reason, message)
+		var attemptPtr *int32
+		if exitStatus != nil {
+			failedAttempts := exitStatus.ContainerFailedAttempts()
+			if failedAttempts > 0 {
+				attemptPtr = &failedAttempts
+			}
+		}
+		newMessage := managers.FormatMainContainerFailureMessage(cond.Message, exitStatus, attemptPtr)
 		if updated := instance.Status.LogFailed(cond.Reason, newMessage); updated {
 			instance.Status.CompletionTime = &now
 			log.V(1).Info("Job Logging Status Failed", "Message", newMessage, "podStatus", podStatus, "PodMessage", message)
 			return true, nil
 		}
+	}
+
+	if updated, err := logPodWarning(); updated || err != nil {
+		return updated, err
 	}
 
 	if cond.Type == kfapi.JobRestarting {

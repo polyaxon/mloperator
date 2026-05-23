@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	apiv1 "github.com/polyaxon/mloperator/api/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -204,6 +205,103 @@ var _ = Describe("Service Controller", func() {
 		})
 	})
 
+	Context("When reconciling deployment status", func() {
+		newInstance := func(name string, labels map[string]string) *apiv1.Service {
+			return &apiv1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      name,
+					Namespace: "default",
+					Labels:    labels,
+				},
+				Status: apiv1.OperationStatus{
+					Conditions: []apiv1.OperationCondition{
+						{
+							Type:   apiv1.OperationRunning,
+							Status: corev1.ConditionTrue,
+						},
+					},
+				},
+			}
+		}
+
+		runningDeployment := func() appsv1.Deployment {
+			return appsv1.Deployment{
+				Status: appsv1.DeploymentStatus{
+					AvailableReplicas: 1,
+					ReadyReplicas:     1,
+					Conditions: []appsv1.DeploymentCondition{
+						{
+							Type:    appsv1.DeploymentAvailable,
+							Status:  corev1.ConditionTrue,
+							Reason:  "MinimumReplicasAvailable",
+							Message: "Deployment has minimum availability.",
+						},
+					},
+				},
+			}
+		}
+
+		failedPod := func(name string, instanceName string) *corev1.Pod {
+			return &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      name,
+					Namespace: "default",
+					Labels: map[string]string{
+						"app.kubernetes.io/instance": instanceName,
+					},
+				},
+				Status: corev1.PodStatus{
+					Phase: corev1.PodFailed,
+					ContainerStatuses: []corev1.ContainerStatus{
+						{
+							Name: "main",
+							State: corev1.ContainerState{
+								Terminated: &corev1.ContainerStateTerminated{
+									ExitCode: 1,
+									Reason:   "Error",
+									Message:  "container exited",
+								},
+							},
+						},
+					},
+				},
+			}
+		}
+
+		setFakeClient := func(objects ...client.Object) {
+			reconciler.Client = fake.NewClientBuilder().
+				WithScheme(k8sClient.Scheme()).
+				WithObjects(objects...).
+				WithStatusSubresource(&apiv1.Service{}).
+				Build()
+		}
+
+		It("should reconcile deployment state even when the instance label is missing", func() {
+			instance := newInstance("test-service-missing-instance-label", nil)
+			setFakeClient(instance)
+
+			updated := reconciler.reconcileDeploymentStatus(instance, runningDeployment())
+
+			Expect(updated).To(BeTrue())
+			Expect(instance.Status.IsRunning()).To(BeTrue())
+		})
+
+		It("should not log failed pods from the deployment status path", func() {
+			instance := newInstance(
+				"test-service-failed-pod-deployment-status",
+				map[string]string{"app.kubernetes.io/instance": "test-service-failed-pod-deployment-status"},
+			)
+			pod := failedPod("test-service-failed-pod-deployment-status-pod", instance.Name)
+			setFakeClient(instance, pod)
+
+			updated := reconciler.reconcileDeploymentStatus(instance, appsv1.Deployment{})
+
+			Expect(updated).To(BeFalse())
+			Expect(instance.Status.IsRunning()).To(BeTrue())
+			Expect(instance.Status.IsWarning()).To(BeFalse())
+		})
+	})
+
 	Context("When handling service container exits", func() {
 		newInstance := func(name string, backoffLimit *int32) *apiv1.Service {
 			return &apiv1.Service{
@@ -394,6 +492,10 @@ var _ = Describe("Service Controller", func() {
 			Expect(done).To(BeTrue())
 			Expect(instance.Status.IsFailed()).To(BeTrue())
 			Expect(instance.Status.CompletionTime).NotTo(BeNil())
+			condition := instance.Status.Conditions[len(instance.Status.Conditions)-1]
+			Expect(condition.Message).To(ContainSubstring(`Main container "main" in pod "test-service-default-backoff-pod"`))
+			Expect(condition.Message).To(ContainSubstring("exited with code 1 after 1 failed attempt(s), exceeding maxRetries 0"))
+			Expect(condition.Message).To(ContainSubstring("container exited"))
 		})
 
 		It("should keep running failed exits within the retry budget", func() {

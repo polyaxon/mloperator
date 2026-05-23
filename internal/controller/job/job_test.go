@@ -487,4 +487,185 @@ var _ = Describe("Job Controller - Deleted Job Detection", func() {
 			Expect(updatedInstance.Status.IsStopped()).To(BeTrue())
 		})
 	})
+
+	Context("when job reaches terminal failure", func() {
+		newInstance := func(name string, withInstanceLabel bool) *apiv1.Job {
+			labels := map[string]string{}
+			if withInstanceLabel {
+				labels["app.kubernetes.io/instance"] = name
+			}
+			return &apiv1.Job{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      name,
+					Namespace: testNamespace,
+					Labels:    labels,
+				},
+				Status: apiv1.OperationStatus{
+					Conditions: []apiv1.OperationCondition{},
+				},
+			}
+		}
+
+		newBackoffLimitJob := func(name string, failed int32) batchv1.Job {
+			return batchv1.Job{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      name,
+					Namespace: testNamespace,
+				},
+				Status: batchv1.JobStatus{
+					Failed: failed,
+					Conditions: []batchv1.JobCondition{
+						{
+							Type:    batchv1.JobFailed,
+							Status:  corev1.ConditionTrue,
+							Reason:  "BackoffLimitExceeded",
+							Message: "Job has reached the specified backoff limit",
+						},
+					},
+				},
+			}
+		}
+
+		newJobWithoutConditions := func(name string, active int32, failed int32) batchv1.Job {
+			return batchv1.Job{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      name,
+					Namespace: testNamespace,
+				},
+				Status: batchv1.JobStatus{
+					Active: active,
+					Failed: failed,
+				},
+			}
+		}
+
+		newTerminatedPod := func(name string, instanceName string) *corev1.Pod {
+			return &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      name,
+					Namespace: testNamespace,
+					Labels: map[string]string{
+						"app.kubernetes.io/instance": instanceName,
+					},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Name: "trainer"},
+					},
+				},
+				Status: corev1.PodStatus{
+					ContainerStatuses: []corev1.ContainerStatus{
+						{
+							Name:         "trainer",
+							RestartCount: 2,
+							State: corev1.ContainerState{
+								Terminated: &corev1.ContainerStateTerminated{
+									ExitCode: 2,
+									Reason:   "Error",
+									Message:  "bad args",
+								},
+							},
+						},
+					},
+				},
+			}
+		}
+
+		newTransientWarningPod := func(name string, instanceName string) *corev1.Pod {
+			return &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      name,
+					Namespace: testNamespace,
+					Labels: map[string]string{
+						"app.kubernetes.io/instance": instanceName,
+					},
+				},
+				Status: corev1.PodStatus{
+					Phase: corev1.PodPending,
+					Conditions: []corev1.PodCondition{
+						{
+							Type:    corev1.PodReady,
+							Status:  corev1.ConditionFalse,
+							Reason:  "ContainersNotReady",
+							Message: "containers are not ready",
+						},
+					},
+				},
+			}
+		}
+
+		setFakeClient := func(objects ...client.Object) {
+			reconciler.Client = fake.NewClientBuilder().
+				WithScheme(scheme).
+				WithObjects(objects...).
+				WithStatusSubresource(&apiv1.Job{}).
+				Build()
+		}
+
+		It("should enrich BackoffLimitExceeded with main container termination details", func() {
+			instance := newInstance("test-job-backoff-details", true)
+			pod := newTerminatedPod("test-job-backoff-details-pod", instance.Name)
+			setFakeClient(instance, pod)
+
+			updated := reconciler.reconcileJobStatus(instance, newBackoffLimitJob(instance.Name, 3))
+
+			Expect(updated).To(BeTrue())
+			Expect(instance.Status.IsFailed()).To(BeTrue())
+			condition := instance.Status.Conditions[len(instance.Status.Conditions)-1]
+			Expect(condition.Reason).To(Equal("BackoffLimitExceeded"))
+			Expect(condition.Message).To(ContainSubstring("after 3 failed attempt(s)"))
+			Expect(condition.Message).To(ContainSubstring(`Main container "trainer" in pod "test-job-backoff-details-pod"`))
+			Expect(condition.Message).To(ContainSubstring("exit code 2 (Error): bad args"))
+		})
+
+		It("should keep the Kubernetes failure message when no pod exit status is available", func() {
+			instance := newInstance("test-job-backoff-no-pods", false)
+			setFakeClient(instance)
+
+			updated := reconciler.reconcileJobStatus(instance, newBackoffLimitJob(instance.Name, 1))
+
+			Expect(updated).To(BeTrue())
+			condition := instance.Status.Conditions[len(instance.Status.Conditions)-1]
+			Expect(condition.Reason).To(Equal("BackoffLimitExceeded"))
+			Expect(condition.Message).To(Equal("Job has reached the specified backoff limit"))
+		})
+
+		It("should not let transient pod warnings mask terminal failure", func() {
+			instance := newInstance("test-job-terminal-over-warning", true)
+			pod := newTransientWarningPod("test-job-terminal-over-warning-pod", instance.Name)
+			setFakeClient(instance, pod)
+
+			updated := reconciler.reconcileJobStatus(instance, newBackoffLimitJob(instance.Name, 1))
+
+			Expect(updated).To(BeTrue())
+			condition := instance.Status.Conditions[len(instance.Status.Conditions)-1]
+			Expect(condition.Type).To(Equal(apiv1.OperationFailed))
+			Expect(condition.Reason).To(Equal("BackoffLimitExceeded"))
+			Expect(condition.Message).NotTo(ContainSubstring("containers are not ready"))
+		})
+
+		It("should keep pod warning details when no job conditions are available", func() {
+			instance := newInstance("test-job-no-conditions-warning", true)
+			pod := newTransientWarningPod("test-job-no-conditions-warning-pod", instance.Name)
+			setFakeClient(instance, pod)
+
+			updated := reconciler.reconcileJobStatus(instance, newJobWithoutConditions(instance.Name, 0, 1))
+
+			Expect(updated).To(BeTrue())
+			condition := instance.Status.Conditions[len(instance.Status.Conditions)-1]
+			Expect(condition.Type).To(Equal(apiv1.OperationWarning))
+			Expect(condition.Reason).To(Equal("ContainersNotReady"))
+			Expect(condition.Message).To(Equal("containers are not ready"))
+		})
+
+		It("should not mark jobs running while pods are still starting", func() {
+			instance := newInstance("test-job-no-pods-active", true)
+			setFakeClient(instance)
+
+			updated := reconciler.reconcileJobStatus(instance, newJobWithoutConditions(instance.Name, 1, 0))
+
+			Expect(updated).To(BeFalse())
+			Expect(instance.Status.Conditions).To(BeEmpty())
+		})
+	})
 })

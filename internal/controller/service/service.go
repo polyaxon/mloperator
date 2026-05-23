@@ -138,12 +138,9 @@ func (r *ServiceReconciler) reconcileDeploymentStatus(instance *apiv1.Service, d
 	log := r.Log
 
 	// Check the pods
-	instanceID, ok := instance.Labels["app.kubernetes.io/instance"]
-	if !ok {
-		return false
-	}
+	instanceID := instance.Labels["app.kubernetes.io/instance"]
 	podStatus, reason, message := managers.HasUnschedulablePods(r.Client, instanceID, instance.Namespace)
-	if podStatus == apiv1.OperationWarning || podStatus == apiv1.OperationFailed {
+	if podStatus == apiv1.OperationWarning {
 		log.V(1).Info("Service has unschedulable pod(s)", "Reason", reason, "message", message)
 		if updated := instance.Status.LogWarning(reason, message); updated {
 			log.V(1).Info("Service Logging Status Warning")

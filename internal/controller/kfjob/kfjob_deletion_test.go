@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	apiv1 "github.com/polyaxon/mloperator/api/v1"
+	"github.com/polyaxon/mloperator/internal/controller/kfjob/kfapi"
 	"github.com/polyaxon/mloperator/internal/controller/kfjob/kinds"
 )
 
@@ -50,6 +51,153 @@ var _ = Describe("KfJob Controller - Deleted Job Detection", func() {
 			Log:    zap.New(zap.UseDevMode(true)),
 			Scheme: scheme,
 		}
+	})
+
+	Describe("common status reconciliation", func() {
+		newInstance := func(name string) *apiv1.KfJob {
+			return &apiv1.KfJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      name,
+					Namespace: testNamespace,
+					Labels: map[string]string{
+						"app.kubernetes.io/instance": name,
+					},
+				},
+				Status: apiv1.OperationStatus{
+					Conditions: []apiv1.OperationCondition{},
+				},
+			}
+		}
+
+		newKfJobWithCondition := func(name string, condType kfapi.JobConditionType, reason string, message string) unstructured.Unstructured {
+			job := unstructured.Unstructured{Object: map[string]interface{}{}}
+			job.SetAPIVersion(kinds.KFAPIVersion)
+			job.SetKind(kinds.TFJobKind)
+			job.SetName(name)
+			job.SetNamespace(testNamespace)
+			job.Object["status"] = map[string]interface{}{
+				"conditions": []interface{}{
+					map[string]interface{}{
+						"type":    string(condType),
+						"status":  string(corev1.ConditionTrue),
+						"reason":  reason,
+						"message": message,
+					},
+				},
+			}
+			return job
+		}
+
+		newTerminatedPod := func(name string, instanceName string) *corev1.Pod {
+			return &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      name,
+					Namespace: testNamespace,
+					Labels: map[string]string{
+						"app.kubernetes.io/instance": instanceName,
+					},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Name: "trainer"},
+					},
+				},
+				Status: corev1.PodStatus{
+					ContainerStatuses: []corev1.ContainerStatus{
+						{
+							Name:         "trainer",
+							RestartCount: 2,
+							State: corev1.ContainerState{
+								Terminated: &corev1.ContainerStateTerminated{
+									ExitCode: 2,
+									Reason:   "Error",
+									Message:  "bad args",
+								},
+							},
+						},
+					},
+				},
+			}
+		}
+
+		newTransientWarningPod := func(name string, instanceName string) *corev1.Pod {
+			return &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      name,
+					Namespace: testNamespace,
+					Labels: map[string]string{
+						"app.kubernetes.io/instance": instanceName,
+					},
+				},
+				Status: corev1.PodStatus{
+					Phase: corev1.PodPending,
+					Conditions: []corev1.PodCondition{
+						{
+							Type:    corev1.PodReady,
+							Status:  corev1.ConditionFalse,
+							Reason:  "ContainersNotReady",
+							Message: "containers are not ready",
+						},
+					},
+				},
+			}
+		}
+
+		setFakeClient := func(objects ...client.Object) {
+			reconciler.Client = fake.NewClientBuilder().
+				WithScheme(scheme).
+				WithObjects(objects...).
+				WithStatusSubresource(&apiv1.KfJob{}).
+				Build()
+		}
+
+		It("should enrich failed status with main container termination details", func() {
+			instance := newInstance("test-kfjob-failed-details")
+			pod := newTerminatedPod("test-kfjob-failed-details-pod", instance.Name)
+			setFakeClient(instance, pod)
+			job := newKfJobWithCondition(instance.Name, kfapi.JobFailed, "BackoffLimitExceeded", "Job has reached the specified backoff limit")
+
+			updated, err := reconciler.reconcileKfJobStatus(instance, job)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(updated).To(BeTrue())
+			Expect(instance.Status.IsFailed()).To(BeTrue())
+			condition := instance.Status.Conditions[len(instance.Status.Conditions)-1]
+			Expect(condition.Reason).To(Equal("BackoffLimitExceeded"))
+			Expect(condition.Message).To(ContainSubstring("after 3 failed attempt(s)"))
+			Expect(condition.Message).To(ContainSubstring(`Main container "trainer" in pod "test-kfjob-failed-details-pod"`))
+			Expect(condition.Message).To(ContainSubstring("exit code 2 (Error): bad args"))
+		})
+
+		It("should not let transient pod warnings mask failed status", func() {
+			instance := newInstance("test-kfjob-failed-over-warning")
+			pod := newTransientWarningPod("test-kfjob-failed-over-warning-pod", instance.Name)
+			setFakeClient(instance, pod)
+			job := newKfJobWithCondition(instance.Name, kfapi.JobFailed, "BackoffLimitExceeded", "Job has reached the specified backoff limit")
+
+			updated, err := reconciler.reconcileKfJobStatus(instance, job)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(updated).To(BeTrue())
+			condition := instance.Status.Conditions[len(instance.Status.Conditions)-1]
+			Expect(condition.Type).To(Equal(apiv1.OperationFailed))
+			Expect(condition.Reason).To(Equal("BackoffLimitExceeded"))
+			Expect(condition.Message).NotTo(ContainSubstring("containers are not ready"))
+		})
+
+		It("should not let transient pod warnings mask running status", func() {
+			instance := newInstance("test-kfjob-running-over-warning")
+			pod := newTransientWarningPod("test-kfjob-running-over-warning-pod", instance.Name)
+			setFakeClient(instance, pod)
+			job := newKfJobWithCondition(instance.Name, kfapi.JobRunning, "JobRunning", "Job is running")
+
+			updated, err := reconciler.reconcileKfJobStatus(instance, job)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(updated).To(BeTrue())
+			condition := instance.Status.Conditions[len(instance.Status.Conditions)-1]
+			Expect(condition.Type).To(Equal(apiv1.OperationRunning))
+		})
 	})
 
 	Describe("TFJob", func() {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	apiv1 "github.com/polyaxon/mloperator/api/v1"
@@ -31,6 +32,41 @@ func (status MainContainerExitStatus) ContainerFailedAttempts() int32 {
 		attempts++
 	}
 	return attempts
+}
+
+func FormatMainContainerFailureMessage(entityMessage string, exitStatus *MainContainerExitStatus, attempts *int32) string {
+	if exitStatus == nil {
+		return entityMessage
+	}
+
+	message := strings.TrimSpace(entityMessage)
+	if attempts != nil && *attempts > 0 {
+		if message == "" {
+			message = fmt.Sprintf("Operation failed after %d failed attempt(s)", *attempts)
+		} else {
+			message = fmt.Sprintf("%s after %d failed attempt(s)", strings.TrimSuffix(message, "."), *attempts)
+		}
+	}
+
+	detail := fmt.Sprintf(
+		"Main container %q in pod %q terminated with exit code %d",
+		exitStatus.ContainerName,
+		exitStatus.PodName,
+		exitStatus.ExitCode,
+	)
+	if exitStatus.Reason != "" {
+		detail = fmt.Sprintf("%s (%s)", detail, exitStatus.Reason)
+	}
+	if exitStatus.Message != "" {
+		detail = fmt.Sprintf("%s: %s", detail, exitStatus.Message)
+	}
+	if message == "" {
+		return detail
+	}
+	if strings.HasSuffix(message, ".") {
+		return message + " " + detail
+	}
+	return message + ". " + detail
 }
 
 // GetPodPorts returns the pod's port from the container definition
