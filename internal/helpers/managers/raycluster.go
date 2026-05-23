@@ -14,11 +14,13 @@ import (
 	"github.com/polyaxon/mloperator/internal/helpers/utils"
 )
 
+const appKubernetesNameLabel = "app.kubernetes.io/name"
+
 /*
 GetRayStartParams utils function to handle default case
 */
 func GetRayStartParams(rayStartParams map[string]string) map[string]string {
-	if rayStartParams != nil && len(rayStartParams) > 0 {
+	if len(rayStartParams) > 0 {
 		return rayStartParams
 	}
 	return make(map[string]string)
@@ -28,12 +30,12 @@ func GetRayStartParams(rayStartParams map[string]string) map[string]string {
 func generateHeadGroupSpec(replicaSpec apiv1.RayReplicaSpec, name string, labels map[string]string, annotations map[string]string) rayapi.HeadGroupSpec {
 	l := make(map[string]string)
 	for k, v := range replicaSpec.Template.GetLabels() {
-		if k != "app.kubernetes.io/name" {
+		if k != appKubernetesNameLabel {
 			l[k] = v
 		}
 	}
 	for k, v := range labels {
-		if k != "app.kubernetes.io/name" {
+		if k != appKubernetesNameLabel {
 			l[k] = v
 		}
 	}
@@ -61,7 +63,7 @@ func generateHeadGroupSpec(replicaSpec apiv1.RayReplicaSpec, name string, labels
 func generateWorkerGroupSpec(replicaSpec apiv1.RayReplicaSpec, labels map[string]string, annotations map[string]string, idx int) rayapi.WorkerGroupSpec {
 	l := make(map[string]string)
 	for k, v := range labels {
-		if k != "app.kubernetes.io/name" {
+		if k != appKubernetesNameLabel {
 			l[k] = v
 		}
 	}
@@ -133,7 +135,7 @@ func GenerateRayCluster(
 ) (*unstructured.Unstructured, error) {
 	head := generateHeadGroupSpec(spec.Head, name, labels, annotations)
 	var workers []rayapi.WorkerGroupSpec
-	if spec.Workers != nil && len(spec.Workers) > 0 {
+	if len(spec.Workers) > 0 {
 		workers = make([]rayapi.WorkerGroupSpec, len(spec.Workers))
 		for i, w := range spec.Workers {
 			workers[i] = generateWorkerGroupSpec(w, labels, annotations, i)

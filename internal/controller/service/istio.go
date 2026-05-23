@@ -13,6 +13,7 @@ import (
 	"github.com/polyaxon/mloperator/internal/helpers/managers"
 )
 
+//nolint:unused // Istio VirtualService reconciliation is optional and will be wired behind Istio config.
 func (r *ServiceReconciler) reconcileVirtualService(ctx context.Context, instance *apiv1.Service) error {
 	log := r.Log
 

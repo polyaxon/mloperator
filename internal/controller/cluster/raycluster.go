@@ -106,7 +106,9 @@ func (r *ClusterReconciler) reconcileRayCluster(ctx context.Context, instance *a
 		}
 
 		instance.Status.LogStarting()
-		err = r.Status().Update(ctx, instance)
+		if err := r.Status().Update(ctx, instance); err != nil {
+			return err
+		}
 		_ = r.instanceSyncStatus(instance)
 	} else if err != nil {
 		return err
@@ -148,6 +150,9 @@ func (r *ClusterReconciler) reconcileRayClusterStatus(instance *apiv1.Cluster, j
 
 	// Check the pods
 	instanceID, ok := instance.Labels["app.kubernetes.io/instance"]
+	if !ok {
+		return false, nil
+	}
 	podStatus, reason, message := managers.HasUnschedulablePods(r.Client, instanceID, instance.Namespace)
 	if podStatus == apiv1.OperationWarning {
 		log.V(1).Info("Service has unschedulable pod(s)", "Reason", reason, "message", message)

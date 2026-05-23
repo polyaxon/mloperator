@@ -49,6 +49,8 @@ func (r *ClusterReconciler) handleTTL(ctx context.Context, instance *apiv1.Clust
 }
 
 // handlePastActiveDeadline checks if operation has ActiveDeadlineSeconds field set and if it is exceeded.
+//
+//nolint:unused // Retained for planned active-deadline parity across operation controllers.
 func (r *ClusterReconciler) handlePastActiveDeadline(ctx context.Context, instance *apiv1.Cluster) (*time.Duration, error) {
 	log := r.Log
 
@@ -83,6 +85,7 @@ func (r *ClusterReconciler) handlePastActiveDeadline(ctx context.Context, instan
 	return nil, nil
 }
 
+//nolint:unused // Retained for planned retry/backoff parity across operation controllers.
 func (r *ClusterReconciler) getBackOff(backOff int32) time.Duration {
 	// The backoff is capped such that 'calculated' value never overflows.
 	delay := float64(1) * math.Pow(2, float64(backOff))

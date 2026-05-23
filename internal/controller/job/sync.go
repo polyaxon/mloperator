@@ -1,15 +1,9 @@
 package job
 
 import (
-	"time"
-
 	apiv1 "github.com/polyaxon/mloperator/api/v1"
 	"github.com/polyaxon/mloperator/internal/helpers/config"
 	"github.com/polyaxon/mloperator/internal/helpers/plugins"
-)
-
-const (
-	apiServerDefaultTimeout = 35 * time.Second
 )
 
 func (r *JobReconciler) instanceSyncStatus(instance *apiv1.Job) error {

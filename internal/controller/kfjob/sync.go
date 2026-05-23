@@ -1,15 +1,9 @@
 package kfjob
 
 import (
-	"time"
-
 	apiv1 "github.com/polyaxon/mloperator/api/v1"
 	"github.com/polyaxon/mloperator/internal/helpers/config"
 	"github.com/polyaxon/mloperator/internal/helpers/plugins"
-)
-
-const (
-	apiServerDefaultTimeout = 35 * time.Second
 )
 
 func (r *KfJobReconciler) instanceSyncStatus(instance *apiv1.KfJob) error {

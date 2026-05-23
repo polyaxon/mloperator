@@ -105,7 +105,9 @@ func (r *ServiceReconciler) reconcileDeployment(ctx context.Context, instance *a
 		}
 		justCreated = true
 		instance.Status.LogStarting()
-		err = r.Status().Update(ctx, instance)
+		if err := r.Status().Update(ctx, instance); err != nil {
+			return err
+		}
 		_ = r.instanceSyncStatus(instance)
 	} else if err != nil {
 		return err

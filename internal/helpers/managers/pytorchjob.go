@@ -23,7 +23,7 @@ func GeneratePytorchJob(
 ) (*unstructured.Unstructured, error) {
 	replicaSpecs := map[apiv1.PyTorchReplicaType]*apiv1.KFReplicaSpec{}
 	for k, v := range spec.ReplicaSpecs {
-		replicaSpecs[apiv1.PyTorchReplicaType(k)] = generateKFReplica(*v, labels, annotations)
+		replicaSpecs[k] = generateKFReplica(*v, labels, annotations)
 	}
 
 	jobSpec := &kfapi.PyTorchJobSpec{

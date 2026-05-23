@@ -42,6 +42,9 @@ func (r *KfJobReconciler) reconcileKfJobStatus(instance *apiv1.KfJob, job unstru
 
 	// Check the pods
 	instanceID, ok := instance.Labels["app.kubernetes.io/instance"]
+	if !ok {
+		return false, nil
+	}
 	podStatus, reason, message := managers.HasUnschedulablePods(r.Client, instanceID, instance.Namespace)
 	if podStatus == apiv1.OperationWarning {
 		log.V(1).Info("Service has unschedulable pod(s)", "Reason", reason, "message", message)

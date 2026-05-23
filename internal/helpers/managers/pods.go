@@ -23,6 +23,8 @@ type MainContainerExitStatus struct {
 	currentExitSeen bool
 }
 
+const imagePullBackOffReason = "ImagePullBackOff"
+
 func (status MainContainerExitStatus) ContainerFailedAttempts() int32 {
 	attempts := status.RestartCount
 	if status.currentExitSeen {
@@ -200,14 +202,14 @@ func HasUnschedulablePods(controllerClient client.Client, instanceID string, nam
 		if pod.Status.Phase != corev1.PodRunning && pod.Status.Conditions != nil {
 			if pod.Status.InitContainerStatuses != nil {
 				for _, cs := range pod.Status.InitContainerStatuses {
-					if !cs.Ready && cs.State.Waiting != nil && cs.State.Waiting.Reason == "ImagePullBackOff" {
+					if !cs.Ready && cs.State.Waiting != nil && cs.State.Waiting.Reason == imagePullBackOffReason {
 						return apiv1.OperationWarning, "InitContainerImagePullBackOff", cs.State.Waiting.Message
 					}
 				}
 			}
 			for _, cs := range pod.Status.ContainerStatuses {
-				if !cs.Ready && cs.State.Waiting != nil && cs.State.Waiting.Reason == "ImagePullBackOff" {
-					return apiv1.OperationWarning, "ImagePullBackOff", cs.State.Waiting.Message
+				if !cs.Ready && cs.State.Waiting != nil && cs.State.Waiting.Reason == imagePullBackOffReason {
+					return apiv1.OperationWarning, imagePullBackOffReason, cs.State.Waiting.Message
 				}
 			}
 			for _, cond := range pod.Status.Conditions {

@@ -23,7 +23,7 @@ func GenerateMPIJob(
 ) (*unstructured.Unstructured, error) {
 	replicaSpecs := map[apiv1.MPIReplicaType]*apiv1.KFReplicaSpec{}
 	for k, v := range spec.ReplicaSpecs {
-		replicaSpecs[apiv1.MPIReplicaType(k)] = generateKFReplica(*v, labels, annotations)
+		replicaSpecs[k] = generateKFReplica(*v, labels, annotations)
 	}
 
 	jobSpec := &kfapi.MPIJobSpec{

@@ -114,8 +114,8 @@ func getOrUpdateOperationCondition(currentCond *OperationCondition, conditionTyp
 	return &newCond, true
 }
 
-// getLastEntityCondition returns the condition with the specific type form status.conditions
-func getLastEntityCondition(status OperationStatus, condType OperationConditionType) *OperationCondition {
+// getLastEntityCondition returns the latest status condition.
+func getLastEntityCondition(status OperationStatus) *OperationCondition {
 	if len(status.Conditions) > 0 {
 		return &status.Conditions[len(status.Conditions)-1]
 	}
@@ -193,7 +193,7 @@ func IsOperationBeingDeleted[T metav1.Object](obj T) bool {
 
 // removeCondition removes a condition of the specified type from the status
 func removeCondition(status *OperationStatus, conditionType OperationConditionType) {
-	var newConditions []OperationCondition
+	newConditions := make([]OperationCondition, 0, len(status.Conditions))
 	for _, c := range status.Conditions {
 		if c.Type == conditionType {
 			continue
@@ -204,9 +204,9 @@ func removeCondition(status *OperationStatus, conditionType OperationConditionTy
 }
 
 // logCondition logs a condition to the status
-func logCondition(status *OperationStatus, condType OperationConditionType, conditionStatus corev1.ConditionStatus, reason, message string) bool {
-	currentCond := getLastEntityCondition(*status, condType)
-	cond, isUpdated := getOrUpdateOperationCondition(currentCond, condType, conditionStatus, reason, message)
+func logCondition(status *OperationStatus, condType OperationConditionType, reason, message string) bool {
+	currentCond := getLastEntityCondition(*status)
+	cond, isUpdated := getOrUpdateOperationCondition(currentCond, condType, corev1.ConditionTrue, reason, message)
 	if isUpdated && cond != nil {
 		removeCondition(status, condType)
 		status.Conditions = append(status.Conditions, *cond)
@@ -217,12 +217,12 @@ func logCondition(status *OperationStatus, condType OperationConditionType, cond
 
 // LogStarting sets Operation to starting
 func (status *OperationStatus) LogStarting() bool {
-	return logCondition(status, OperationStarting, corev1.ConditionTrue, "OperatorController", "Operation is starting")
+	return logCondition(status, OperationStarting, "OperatorController", "Operation is starting")
 }
 
 // LogRunning sets Operation to running
 func (status *OperationStatus) LogRunning() bool {
-	return logCondition(status, OperationRunning, corev1.ConditionTrue, "OperatorController", "Operation is running")
+	return logCondition(status, OperationRunning, "OperatorController", "Operation is running")
 }
 
 // LogWarning sets Operation to succeeded
@@ -233,22 +233,22 @@ func (status *OperationStatus) LogWarning(reason, message string) bool {
 	if message == "" {
 		message = "Underlaying job has an issue"
 	}
-	return logCondition(status, OperationWarning, corev1.ConditionTrue, reason, message)
+	return logCondition(status, OperationWarning, reason, message)
 }
 
 // LogSucceeded sets Operation to succeeded
 func (status *OperationStatus) LogSucceeded() bool {
-	return logCondition(status, OperationSucceeded, corev1.ConditionTrue, "OperatorController", "Operation has succeeded")
+	return logCondition(status, OperationSucceeded, "OperatorController", "Operation has succeeded")
 }
 
 // LogFailed sets Operation to failed
 func (status *OperationStatus) LogFailed(reason, message string) bool {
-	return logCondition(status, OperationFailed, corev1.ConditionTrue, reason, message)
+	return logCondition(status, OperationFailed, reason, message)
 }
 
 // LogStopped sets Operation to stopped
 func (status *OperationStatus) LogStopped(reason, message string) bool {
-	return logCondition(status, OperationStopped, corev1.ConditionTrue, reason, message)
+	return logCondition(status, OperationStopped, reason, message)
 }
 
 // ShouldMarkJobAsDeleted checks if a job that doesn't exist should be marked as deleted
