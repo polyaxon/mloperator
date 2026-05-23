@@ -304,7 +304,8 @@ var _ = Describe("Service Controller", func() {
 		}
 
 		setFakeClient := func(instance *apiv1.Service, pods ...*corev1.Pod) {
-			objects := []client.Object{instance}
+			objects := make([]client.Object, 0, 1+len(pods))
+			objects = append(objects, instance)
 			for _, pod := range pods {
 				objects = append(objects, pod)
 			}

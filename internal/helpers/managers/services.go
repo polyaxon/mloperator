@@ -63,7 +63,7 @@ func CopyServiceFields(from, to *corev1.Service) bool {
 
 // GenerateService returns a service given info from a ServiceSpec
 func GenerateService(name string, namespace string, labels map[string]string, annotations map[string]string, ports []int32) *corev1.Service {
-	sports := []corev1.ServicePort{}
+	sports := make([]corev1.ServicePort, 0, len(ports))
 
 	for _, sp := range ports {
 		sports = append(sports, corev1.ServicePort{

@@ -151,10 +151,7 @@ func (r *ClusterReconciler) reconcileDaskClusterStatus(instance *apiv1.Cluster, 
 	log := r.Log
 
 	// Get pod status for enhanced error messages (but don't let it override cluster status)
-	instanceID, ok := instance.Labels["app.kubernetes.io/instance"]
-	if !ok {
-		return false, nil
-	}
+	instanceID := instance.Labels["app.kubernetes.io/instance"]
 	podStatus, reason, message := managers.HasUnschedulablePods(r.Client, instanceID, instance.Namespace)
 
 	status, ok, unerr := unstructured.NestedFieldCopy(cluster.Object, "status")

@@ -38,7 +38,7 @@ func GetPodPorts(podSpec corev1.PodSpec, defaultPort int) []int32 {
 	ports := []int32{int32(defaultPort)}
 	containerPorts := podSpec.Containers[0].Ports
 	if containerPorts != nil {
-		ports = []int32{}
+		ports = make([]int32, 0, len(containerPorts))
 		for _, cp := range containerPorts {
 			ports = append(ports, cp.ContainerPort)
 		}
