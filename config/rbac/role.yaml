@@ -7,14 +7,6 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - events
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - ""
-  resources:
   - pods
   - services
   verbs:

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"crypto/tls"
 	"flag"
 	"os"
@@ -14,15 +13,11 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
@@ -56,27 +51,6 @@ func init() {
 	utilruntime.Must(batchv1.AddToScheme(scheme))
 	utilruntime.Must(apiv1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
-}
-
-// registerUnstructuredIndex registers a field index for unstructured resources
-func registerUnstructuredIndex(
-	mgr ctrl.Manager, gvk schema.GroupVersionKind, indexField string, ownerKind string,
-) error {
-	u := &unstructured.Unstructured{}
-	u.SetGroupVersionKind(gvk)
-
-	return mgr.GetFieldIndexer().IndexField(context.Background(), u, indexField, func(rawObj client.Object) []string {
-		obj := rawObj.(*unstructured.Unstructured)
-		owner := metav1.GetControllerOf(obj)
-		if owner == nil {
-			return nil
-		}
-		// Check if the owner is a Polyaxon resource of the expected kind
-		if owner.APIVersion != apiv1.GroupVersion.String() || owner.Kind != ownerKind {
-			return nil
-		}
-		return []string{owner.Name}
-	})
 }
 
 // nolint:gocyclo
@@ -237,145 +211,6 @@ func main() {
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
-	}
-
-	// Register field indexes once for all controllers
-	indexOwnerField := ".metadata.controller"
-	indexEventInvolvedObjectUidField := ".involvedObject.uid"
-	podUIDIndexField := "metadata.uid"
-
-	// Index Event by `involvedObject.uid`
-	err = mgr.GetFieldIndexer().IndexField(
-		context.Background(), &corev1.Event{}, indexEventInvolvedObjectUidField,
-		func(rawObj client.Object) []string {
-			event := rawObj.(*corev1.Event)
-			if event.InvolvedObject.UID == "" {
-				return nil
-			}
-			return []string{string(event.InvolvedObject.UID)}
-		})
-	if err != nil {
-		setupLog.Error(err, "unable to create index for Event")
-		os.Exit(1)
-	}
-
-	err = mgr.GetFieldIndexer().IndexField(
-		context.Background(), &corev1.Pod{}, podUIDIndexField,
-		func(rawObj client.Object) []string {
-			pod := rawObj.(*corev1.Pod)
-			return []string{string(pod.UID)}
-		})
-	if err != nil {
-		setupLog.Error(err, "unable to create index for Pod")
-		os.Exit(1)
-	}
-
-	err = mgr.GetFieldIndexer().IndexField(
-		context.Background(), &batchv1.Job{}, indexOwnerField,
-		func(rawObj client.Object) []string {
-			job := rawObj.(*batchv1.Job)
-			owner := metav1.GetControllerOf(job)
-			if owner == nil {
-				return nil
-			}
-			if owner.APIVersion != apiv1.GroupVersion.String() || owner.Kind != "job" {
-				return nil
-			}
-			return []string{owner.Name}
-		})
-	if err != nil {
-		setupLog.Error(err, "unable to create index for Job")
-		os.Exit(1)
-	}
-
-	err = mgr.GetFieldIndexer().IndexField(
-		context.Background(), &appsv1.Deployment{}, indexOwnerField,
-		func(rawObj client.Object) []string {
-			deployment := rawObj.(*appsv1.Deployment)
-			owner := metav1.GetControllerOf(deployment)
-			if owner == nil {
-				return nil
-			}
-			if owner.APIVersion != apiv1.GroupVersion.String() || owner.Kind != "service" {
-				return nil
-			}
-			return []string{owner.Name}
-		})
-	if err != nil {
-		setupLog.Error(err, "unable to create index for Deployment")
-		os.Exit(1)
-	}
-
-	err = mgr.GetFieldIndexer().IndexField(
-		context.Background(), &corev1.Service{}, indexOwnerField,
-		func(rawObj client.Object) []string {
-			service := rawObj.(*corev1.Service)
-			owner := metav1.GetControllerOf(service)
-			if owner == nil {
-				return nil
-			}
-			if owner.APIVersion != apiv1.GroupVersion.String() || owner.Kind != "service" {
-				return nil
-			}
-			return []string{owner.Name}
-		})
-	if err != nil {
-		setupLog.Error(err, "unable to create index for Service")
-		os.Exit(1)
-	}
-
-	// Register indexes for Kubeflow job types (conditionally based on enabled flags)
-	kubeflowJobTypes := []schema.GroupVersionKind{}
-
-	if config.GetBoolEnv(config.TFJobEnabled, false) {
-		kubeflowJobTypes = append(kubeflowJobTypes, schema.GroupVersionKind{
-			Group: "kubeflow.org", Version: "v1", Kind: "TFJob",
-		})
-	}
-	if config.GetBoolEnv(config.PytorchJobEnabled, false) {
-		kubeflowJobTypes = append(kubeflowJobTypes, schema.GroupVersionKind{
-			Group: "kubeflow.org", Version: "v1", Kind: "PyTorchJob",
-		})
-	}
-	if config.GetBoolEnv(config.MPIJobEnabled, false) {
-		kubeflowJobTypes = append(kubeflowJobTypes, schema.GroupVersionKind{
-			Group: "kubeflow.org", Version: "v1", Kind: "MPIJob",
-		})
-	}
-
-	for _, gvk := range kubeflowJobTypes {
-		if err := registerUnstructuredIndex(mgr, gvk, indexOwnerField, "kfjob"); err != nil {
-			setupLog.Error(err, "unable to create index for unstructured resource", "kind", gvk.Kind)
-			os.Exit(1)
-		}
-	}
-
-	// Register indexes for cluster types (conditionally based on enabled flags)
-	clusterTypes := []schema.GroupVersionKind{}
-
-	if config.GetBoolEnv(config.RayClusterEnabled, false) {
-		clusterTypes = append(clusterTypes, schema.GroupVersionKind{
-			Group: "ray.io", Version: "v1", Kind: "RayCluster",
-		})
-	}
-	if config.GetBoolEnv(config.DaskClusterEnabled, false) {
-		clusterTypes = append(clusterTypes, schema.GroupVersionKind{
-			Group: "kubernetes.dask.org", Version: "v1", Kind: "DaskCluster",
-		})
-	}
-	// Note: SparkApplication doesn't have a corresponding config flag yet
-	// Uncomment when POLYAXON_SPARK_JOB_ENABLED is added to config
-	// if config.GetBoolEnv(config.SparkJobEnabled, false) {
-	//     clusterTypes = append(clusterTypes, schema.GroupVersionKind{
-	//         Group: "sparkoperator.k8s.io", Version: "v1beta2", Kind: "SparkApplication",
-	//     })
-	// }
-
-	for _, gvk := range clusterTypes {
-		if err := registerUnstructuredIndex(mgr, gvk, indexOwnerField, "cluster"); err != nil {
-			setupLog.Error(err, "unable to create index for unstructured resource", "kind", gvk.Kind)
-			os.Exit(1)
-		}
 	}
 
 	if err := (&job.JobReconciler{

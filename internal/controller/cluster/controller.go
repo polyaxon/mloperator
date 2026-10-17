@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	appsv1 "k8s.io/api/apps/v1"
-	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -45,7 +43,6 @@ type ClusterReconciler struct {
 // +kubebuilder:rbac:groups=core,resources=pods/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apps,resources=deployments/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=core,resources=events,verbs=get;list;watch
 // +kubebuilder:rbac:groups=kubernetes.dask.org,resources=daskclusters,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=kubernetes.dask.org,resources=daskclusters/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=ray.io,resources=rayclusters,verbs=get;list;watch;create;update;patch;delete
@@ -171,24 +168,6 @@ func mapClusterPodToRequest(_ context.Context, object client.Object) []reconcile
 // SetupWithManager register the reconciliation logic
 func (r *ClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
-	// function to convert pod events to reconcile requests for workspaces
-	mapPodToRequest := func(ctx context.Context, object client.Object) []reconcile.Request {
-		return []reconcile.Request{
-			{
-				NamespacedName: types.NamespacedName{
-					Name:      object.GetLabels()[config.PolyaxonRunIdLabel],
-					Namespace: object.GetNamespace(),
-				},
-			},
-		}
-	}
-
-	// predicate function to filter pods that are labeled with the "workspace-name" label key
-	predPodHasWSLabel := predicate.NewPredicateFuncs(func(object client.Object) bool {
-		_, labelExists := object.GetLabels()[config.PolyaxonRunIdLabel]
-		return labelExists
-	})
-
 	// Handler for unstructured cluster jobs - maps them to their owner Cluster
 	// We use a custom handler instead of EnqueueRequestForOwner because the latter
 	// doesn't work reliably on delete events (owner refs may not be accessible)
@@ -220,16 +199,6 @@ func (r *ClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	controllerManager := ctrl.NewControllerManagedBy(mgr).
 		For(&apiv1.Cluster{}).
 		WithOptions(controller.Options{MaxConcurrentReconciles: config.GetIntEnv(config.MaxConcurrentReconciles, 1)})
-	controllerManager.Owns(&batchv1.Job{}).Owns(&corev1.Service{}).Watches(
-		&corev1.Pod{},
-		handler.EnqueueRequestsFromMapFunc(mapPodToRequest),
-		builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}, predPodHasWSLabel),
-	)
-	controllerManager.Owns(&appsv1.Deployment{}).Watches(
-		&corev1.Pod{},
-		handler.EnqueueRequestsFromMapFunc(mapPodToRequest),
-		builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}, predPodHasWSLabel),
-	)
 
 	// Watch cluster-created pods for status changes (e.g., unschedulable, failed, etc.)
 	controllerManager.Watches(

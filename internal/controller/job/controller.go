@@ -38,7 +38,6 @@ type JobReconciler struct {
 // +kubebuilder:rbac:groups=batch,resources=jobs/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=pods/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=core,resources=events,verbs=get;list;watch
 
 // Reconcile logic for JobReconciler
 func (r *JobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {

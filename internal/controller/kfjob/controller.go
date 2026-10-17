@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	appsv1 "k8s.io/api/apps/v1"
-	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -37,7 +35,6 @@ type KfJobReconciler struct {
 // +kubebuilder:rbac:groups=core,resources=services/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=pods/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=core,resources=events,verbs=get;list;watch
 // +kubebuilder:rbac:groups=polyaxon.com,resources=kfjobs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=polyaxon.com,resources=kfjobs/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=polyaxon.com,resources=kfjobs/finalizers,verbs=update
@@ -125,24 +122,6 @@ func (r *KfJobReconciler) cleanUpOperation(ctx context.Context, instance *apiv1.
 // SetupWithManager register the reconciliation logic
 func (r *KfJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
-	// function to convert pod events to reconcile requests for workspaces
-	mapPodToRequest := func(ctx context.Context, object client.Object) []reconcile.Request {
-		return []reconcile.Request{
-			{
-				NamespacedName: types.NamespacedName{
-					Name:      object.GetLabels()[config.PolyaxonRunIdLabel],
-					Namespace: object.GetNamespace(),
-				},
-			},
-		}
-	}
-
-	// predicate function to filter pods that are labeled with the "workspace-name" label key
-	predPodHasWSLabel := predicate.NewPredicateFuncs(func(object client.Object) bool {
-		_, labelExists := object.GetLabels()[config.PolyaxonRunIdLabel]
-		return labelExists
-	})
-
 	// Handler for unstructured Kubeflow jobs - maps them to their owner KfJob
 	mapKfJobToRequest := handler.EnqueueRequestForOwner(
 		mgr.GetScheme(),
@@ -196,16 +175,6 @@ func (r *KfJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	controllerManager := ctrl.NewControllerManagedBy(mgr).
 		For(&apiv1.KfJob{}).
 		WithOptions(controller.Options{MaxConcurrentReconciles: config.GetIntEnv(config.MaxConcurrentReconciles, 1)})
-	controllerManager.Owns(&batchv1.Job{}).Owns(&corev1.Service{}).Watches(
-		&corev1.Pod{},
-		handler.EnqueueRequestsFromMapFunc(mapPodToRequest),
-		builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}, predPodHasWSLabel),
-	)
-	controllerManager.Owns(&appsv1.Deployment{}).Watches(
-		&corev1.Pod{},
-		handler.EnqueueRequestsFromMapFunc(mapPodToRequest),
-		builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}, predPodHasWSLabel),
-	)
 
 	// Watch Kubeflow-created pods for status changes (e.g., unschedulable, failed, etc.)
 	controllerManager.Watches(
