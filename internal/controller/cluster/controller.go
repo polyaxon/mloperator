@@ -136,6 +136,38 @@ func (r *ClusterReconciler) cleanUpOperation(ctx context.Context, instance *apiv
 	return ctrl.Result{}, nil
 }
 
+// daskClusterNameLabel is set by the Dask operator on scheduler and worker pods,
+// which are owned by ReplicaSets of Dask Deployments rather than by the DaskCluster.
+const daskClusterNameLabel = "dask.org/cluster-name"
+
+// clusterPodName returns the Cluster name of a pod created by a RayCluster or DaskCluster,
+// the cluster job has the same name as our Cluster (set in reconcile).
+func clusterPodName(object client.Object) string {
+	for _, ownerRef := range object.GetOwnerReferences() {
+		if (ownerRef.APIVersion == kinds.RayAPIVersion && ownerRef.Kind == kinds.RayClusterKind) ||
+			(ownerRef.APIVersion == kinds.DaskAPIVersion && ownerRef.Kind == kinds.DaskClusterKind) {
+			return ownerRef.Name
+		}
+	}
+	return object.GetLabels()[daskClusterNameLabel]
+}
+
+// mapClusterPodToRequest maps cluster-created pods to their Cluster: Pod -> RayCluster/DaskCluster -> Cluster
+func mapClusterPodToRequest(_ context.Context, object client.Object) []reconcile.Request {
+	name := clusterPodName(object)
+	if name == "" {
+		return nil
+	}
+	return []reconcile.Request{
+		{
+			NamespacedName: types.NamespacedName{
+				Name:      name,
+				Namespace: object.GetNamespace(),
+			},
+		},
+	}
+}
+
 // SetupWithManager register the reconciliation logic
 func (r *ClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
@@ -180,42 +212,9 @@ func (r *ClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	mapClusterToRequest := handler.EnqueueRequestsFromMapFunc(mapClusterToRequestFunc)
 
-	// Handler for cluster-created pods - follows ownership chain: Pod -> RayCluster/DaskCluster -> Cluster
-	mapClusterPodToRequest := func(ctx context.Context, object client.Object) []reconcile.Request {
-		// Cluster pods are owned by the cluster job (RayCluster, DaskCluster, etc.)
-		// We need to find the cluster job's owner (our Cluster) and trigger reconciliation
-		pod := object.(*corev1.Pod)
-
-		// Check if this pod is owned by a cluster job by looking at owner references
-		for _, ownerRef := range pod.GetOwnerReferences() {
-			// Check if owned by a Ray or Dask cluster type
-			if (ownerRef.APIVersion == kinds.RayAPIVersion && ownerRef.Kind == kinds.RayClusterKind) ||
-				(ownerRef.APIVersion == kinds.DaskAPIVersion && ownerRef.Kind == kinds.DaskClusterKind) {
-				// The cluster job has the same name as our Cluster (set in reconcile)
-				// So we can directly map to the Cluster
-				return []reconcile.Request{
-					{
-						NamespacedName: types.NamespacedName{
-							Name:      ownerRef.Name,
-							Namespace: pod.GetNamespace(),
-						},
-					},
-				}
-			}
-		}
-		return []reconcile.Request{}
-	}
-
 	// Predicate for cluster pods - only trigger on meaningful changes
 	predClusterPod := predicate.NewPredicateFuncs(func(object client.Object) bool {
-		// Check if pod is owned by a cluster job
-		for _, ownerRef := range object.GetOwnerReferences() {
-			if (ownerRef.APIVersion == kinds.RayAPIVersion && ownerRef.Kind == kinds.RayClusterKind) ||
-				(ownerRef.APIVersion == kinds.DaskAPIVersion && ownerRef.Kind == kinds.DaskClusterKind) {
-				return true
-			}
-		}
-		return false
+		return clusterPodName(object) != ""
 	})
 
 	controllerManager := ctrl.NewControllerManagedBy(mgr).

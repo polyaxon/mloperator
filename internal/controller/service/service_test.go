@@ -7,9 +7,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	apiv1 "github.com/polyaxon/mloperator/api/v1"
+	"github.com/polyaxon/mloperator/internal/helpers/config"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -594,5 +596,178 @@ var _ = Describe("Service Controller", func() {
 			Expect(instance.Status.IsFailed()).To(BeFalse())
 			Expect(instance.Status.CompletionTime).To(BeNil())
 		})
+	})
+})
+
+var _ = Describe("Service Controller - Pod event mapping", func() {
+	const (
+		runUUID       = "525d5b803037483f8f063c8faa2fc089"
+		resourceName  = "plx-operation-" + runUUID
+		podHash       = "7d9c8b6f5"
+		testNamespace = "polyaxon-agent"
+	)
+
+	var ctx context.Context
+
+	BeforeEach(func() {
+		ctx = context.Background()
+	})
+
+	runLabels := func() map[string]string {
+		return map[string]string{
+			"app.kubernetes.io/instance": runUUID,
+			config.PolyaxonRunIdLabel:    runUUID,
+		}
+	}
+
+	newPod := func(owners ...metav1.OwnerReference) *corev1.Pod {
+		labels := runLabels()
+		labels[appsv1.DefaultDeploymentUniqueLabelKey] = podHash
+		return &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:            resourceName + "-" + podHash + "-x2k7q",
+				Namespace:       testNamespace,
+				Labels:          labels,
+				OwnerReferences: owners,
+			},
+		}
+	}
+
+	newReplicaSetOwner := func(name string) metav1.OwnerReference {
+		return *metav1.NewControllerRef(
+			&appsv1.ReplicaSet{ObjectMeta: metav1.ObjectMeta{Name: name}},
+			appsv1.SchemeGroupVersion.WithKind("ReplicaSet"),
+		)
+	}
+
+	It("should map pods to the Deployment name of their controlling ReplicaSet", func() {
+		requests := mapPodToRequest(ctx, newPod(newReplicaSetOwner(resourceName+"-"+podHash)))
+
+		Expect(requests).To(HaveLen(1))
+		Expect(requests[0].NamespacedName).To(Equal(types.NamespacedName{Name: resourceName, Namespace: testNamespace}))
+	})
+
+	It("should ignore pods without a controlling Deployment ReplicaSet", func() {
+		nonController := newReplicaSetOwner(resourceName + "-" + podHash)
+		nonController.Controller = nil
+		deployment := *metav1.NewControllerRef(
+			&appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: resourceName}},
+			appsv1.SchemeGroupVersion.WithKind("Deployment"),
+		)
+		withoutHash := newPod(newReplicaSetOwner(resourceName + "-" + podHash))
+		delete(withoutHash.Labels, appsv1.DefaultDeploymentUniqueLabelKey)
+
+		Expect(mapPodToRequest(ctx, newPod())).To(BeEmpty())
+		Expect(mapPodToRequest(ctx, newPod(nonController))).To(BeEmpty())
+		Expect(mapPodToRequest(ctx, newPod(deployment))).To(BeEmpty())
+		Expect(mapPodToRequest(ctx, withoutHash)).To(BeEmpty())
+		Expect(mapPodToRequest(ctx, newPod(newReplicaSetOwner(resourceName+"-other")))).To(BeEmpty())
+	})
+
+	It("should record ImagePullBackOff from a pod-only update after a startup warning", func() {
+		instance := &apiv1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      resourceName,
+				Namespace: testNamespace,
+				Labels:    runLabels(),
+			},
+			ServiceSpec: &apiv1.ServiceSpec{
+				Template: corev1.PodTemplateSpec{
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{Name: "polyaxon-main", Image: "missing:latest"},
+							{Name: "polyaxon-sidecar", Image: "test:latest"},
+						},
+					},
+				},
+			},
+			Termination: apiv1.TerminationSpec{},
+			Status: apiv1.OperationStatus{
+				Conditions: []apiv1.OperationCondition{
+					apiv1.NewOperationCondition(apiv1.OperationStarting, corev1.ConditionTrue, "", ""),
+					apiv1.NewOperationCondition(
+						apiv1.OperationWarning,
+						corev1.ConditionTrue,
+						"ContainersNotReady",
+						"containers with unready status: [polyaxon-main polyaxon-sidecar]",
+					),
+				},
+			},
+		}
+
+		deployment := &appsv1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      resourceName,
+				Namespace: testNamespace,
+				Labels:    runLabels(),
+			},
+			Status: appsv1.DeploymentStatus{
+				Replicas:            1,
+				UnavailableReplicas: 1,
+				Conditions: []appsv1.DeploymentCondition{
+					{
+						Type:   appsv1.DeploymentAvailable,
+						Status: corev1.ConditionFalse,
+						Reason: "MinimumReplicasUnavailable",
+					},
+					{
+						Type:   appsv1.DeploymentProgressing,
+						Status: corev1.ConditionTrue,
+						Reason: "ReplicaSetUpdated",
+					},
+				},
+			},
+		}
+		Expect(ctrl.SetControllerReference(instance, deployment, k8sClient.Scheme())).To(Succeed())
+
+		pod := newPod(newReplicaSetOwner(resourceName + "-" + podHash))
+		pod.Status = corev1.PodStatus{
+			Phase: corev1.PodPending,
+			Conditions: []corev1.PodCondition{
+				{
+					Type:    corev1.PodReady,
+					Status:  corev1.ConditionFalse,
+					Reason:  "ContainersNotReady",
+					Message: "containers with unready status: [polyaxon-main]",
+				},
+			},
+			ContainerStatuses: []corev1.ContainerStatus{
+				{
+					Name: "polyaxon-main",
+					State: corev1.ContainerState{
+						Waiting: &corev1.ContainerStateWaiting{
+							Reason:  "ImagePullBackOff",
+							Message: `Back-off pulling image "missing:latest"`,
+						},
+					},
+				},
+				{
+					Name:  "polyaxon-sidecar",
+					Ready: true,
+					State: corev1.ContainerState{Running: &corev1.ContainerStateRunning{}},
+				},
+			},
+		}
+
+		reconciler := &ServiceReconciler{
+			Client: fake.NewClientBuilder().
+				WithScheme(k8sClient.Scheme()).
+				WithObjects(instance, deployment, pod).
+				WithStatusSubresource(&apiv1.Service{}).
+				Build(),
+			Log:    ctrl.Log.WithName("controllers").WithName("Service"),
+			Scheme: k8sClient.Scheme(),
+		}
+
+		requests := mapPodToRequest(ctx, pod)
+		Expect(requests).To(HaveLen(1))
+		_, err := reconciler.Reconcile(ctx, requests[0])
+		Expect(err).NotTo(HaveOccurred())
+
+		persisted := &apiv1.Service{}
+		Expect(reconciler.Get(ctx, types.NamespacedName{Name: resourceName, Namespace: testNamespace}, persisted)).To(Succeed())
+		lastCondition := persisted.Status.Conditions[len(persisted.Status.Conditions)-1]
+		Expect(lastCondition.Type).To(Equal(apiv1.OperationWarning))
+		Expect(lastCondition.Reason).To(Equal("ImagePullBackOff"))
 	})
 })

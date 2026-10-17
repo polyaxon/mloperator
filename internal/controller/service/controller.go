@@ -2,10 +2,12 @@ package service
 
 import (
 	"context"
+	"strings"
 
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -99,20 +101,33 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	return r.reconcileService(ctx, instance)
 }
 
+// mapPodToRequest maps a pod to the Service owning its controlling ReplicaSet,
+// the ReplicaSet is named <deployment>-<pod-template-hash> and GenerateDeployment names the Deployment after its owning Service.
+func mapPodToRequest(_ context.Context, object client.Object) []reconcile.Request {
+	owner := metav1.GetControllerOf(object)
+	if owner == nil || owner.APIVersion != appsv1.SchemeGroupVersion.String() || owner.Kind != "ReplicaSet" {
+		return nil
+	}
+	hash := object.GetLabels()[appsv1.DefaultDeploymentUniqueLabelKey]
+	if hash == "" {
+		return nil
+	}
+	name, ok := strings.CutSuffix(owner.Name, "-"+hash)
+	if !ok {
+		return nil
+	}
+	return []reconcile.Request{
+		{
+			NamespacedName: types.NamespacedName{
+				Name:      name,
+				Namespace: object.GetNamespace(),
+			},
+		},
+	}
+}
+
 // SetupWithManager register the reconciliation logic
 func (r *ServiceReconciler) SetupWithManager(mgr ctrl.Manager) error {
-
-	// function to convert pod events to reconcile requests for workspaces
-	mapPodToRequest := func(ctx context.Context, object client.Object) []reconcile.Request {
-		return []reconcile.Request{
-			{
-				NamespacedName: types.NamespacedName{
-					Name:      object.GetLabels()[config.PolyaxonRunIdLabel],
-					Namespace: object.GetNamespace(),
-				},
-			},
-		}
-	}
 
 	// predicate function to filter pods that are labeled with the "workspace-name" label key
 	predPodHasWSLabel := predicate.NewPredicateFuncs(func(object client.Object) bool {
@@ -123,11 +138,7 @@ func (r *ServiceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	controllerManager := ctrl.NewControllerManagedBy(mgr).
 		For(&apiv1.Service{}).
 		WithOptions(controller.Options{MaxConcurrentReconciles: config.GetIntEnv(config.MaxConcurrentReconciles, 1)})
-	controllerManager.Owns(&corev1.Service{}).Watches(
-		&corev1.Pod{},
-		handler.EnqueueRequestsFromMapFunc(mapPodToRequest),
-		builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}, predPodHasWSLabel),
-	)
+	controllerManager.Owns(&corev1.Service{})
 	controllerManager.Owns(&appsv1.Deployment{}).Watches(
 		&corev1.Pod{},
 		handler.EnqueueRequestsFromMapFunc(mapPodToRequest),
