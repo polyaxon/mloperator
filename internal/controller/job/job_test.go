@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -17,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	apiv1 "github.com/polyaxon/mloperator/api/v1"
+	"github.com/polyaxon/mloperator/internal/helpers/config"
 )
 
 var _ = Describe("Job Controller - Deleted Job Detection", func() {
@@ -667,5 +669,171 @@ var _ = Describe("Job Controller - Deleted Job Detection", func() {
 			Expect(updated).To(BeFalse())
 			Expect(instance.Status.Conditions).To(BeEmpty())
 		})
+	})
+})
+
+var _ = Describe("Job Controller - Pod event mapping", func() {
+	const (
+		runUUID       = "525d5b803037483f8f063c8faa2fc089"
+		resourceName  = "plx-operation-" + runUUID
+		testNamespace = "polyaxon-agent"
+	)
+
+	var (
+		ctx    context.Context
+		scheme *runtime.Scheme
+	)
+
+	BeforeEach(func() {
+		ctx = context.Background()
+
+		scheme = runtime.NewScheme()
+		Expect(corev1.AddToScheme(scheme)).To(Succeed())
+		Expect(batchv1.AddToScheme(scheme)).To(Succeed())
+		Expect(apiv1.AddToScheme(scheme)).To(Succeed())
+	})
+
+	runLabels := func() map[string]string {
+		return map[string]string{
+			"app.kubernetes.io/instance": runUUID,
+			config.PolyaxonRunIdLabel:    runUUID,
+		}
+	}
+
+	newPod := func(owners ...metav1.OwnerReference) *corev1.Pod {
+		return &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:            resourceName + "-xkqcj",
+				Namespace:       testNamespace,
+				Labels:          runLabels(),
+				OwnerReferences: owners,
+			},
+		}
+	}
+
+	newBatchJobOwner := func(name string) metav1.OwnerReference {
+		return *metav1.NewControllerRef(
+			&batchv1.Job{ObjectMeta: metav1.ObjectMeta{Name: name}},
+			batchv1.SchemeGroupVersion.WithKind("Job"),
+		)
+	}
+
+	It("should map pods to the controlling batch Job name", func() {
+		requests := mapPodToRequest(ctx, newPod(newBatchJobOwner(resourceName)))
+
+		Expect(requests).To(HaveLen(1))
+		Expect(requests[0].NamespacedName).To(Equal(types.NamespacedName{Name: resourceName, Namespace: testNamespace}))
+	})
+
+	It("should ignore pods without a controlling batch Job", func() {
+		nonController := newBatchJobOwner(resourceName)
+		nonController.Controller = nil
+		replicaSet := *metav1.NewControllerRef(
+			&appsv1.ReplicaSet{ObjectMeta: metav1.ObjectMeta{Name: resourceName}},
+			appsv1.SchemeGroupVersion.WithKind("ReplicaSet"),
+		)
+
+		Expect(mapPodToRequest(ctx, newPod())).To(BeEmpty())
+		Expect(mapPodToRequest(ctx, newPod(nonController))).To(BeEmpty())
+		Expect(mapPodToRequest(ctx, newPod(replicaSet))).To(BeEmpty())
+	})
+
+	It("should record Running from a pod-only update after a startup warning", func() {
+		instance := &apiv1.Job{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      resourceName,
+				Namespace: testNamespace,
+				Labels:    runLabels(),
+			},
+			BatchJobSpec: &apiv1.BatchJobSpec{
+				Template: corev1.PodTemplateSpec{
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{Name: "polyaxon-main", Image: "test:latest"},
+							{Name: "polyaxon-sidecar", Image: "test:latest"},
+							{Name: "probe", Image: "test:latest"},
+						},
+						RestartPolicy: corev1.RestartPolicyNever,
+					},
+				},
+			},
+			Termination: apiv1.TerminationSpec{},
+			Status: apiv1.OperationStatus{
+				Conditions: []apiv1.OperationCondition{
+					apiv1.NewOperationCondition(apiv1.OperationStarting, corev1.ConditionTrue, "", ""),
+					apiv1.NewOperationCondition(
+						apiv1.OperationWarning,
+						corev1.ConditionTrue,
+						"ContainersNotReady",
+						"containers with unready status: [polyaxon-main polyaxon-sidecar probe]",
+					),
+				},
+			},
+		}
+
+		batchJob := &batchv1.Job{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      resourceName,
+				Namespace: testNamespace,
+				Labels:    runLabels(),
+			},
+			Status: batchv1.JobStatus{
+				Active: 1,
+				Ready:  new(int32),
+			},
+		}
+		Expect(ctrl.SetControllerReference(instance, batchJob, scheme)).To(Succeed())
+
+		pod := newPod(newBatchJobOwner(resourceName))
+		pod.Status = corev1.PodStatus{
+			Phase: corev1.PodRunning,
+			Conditions: []corev1.PodCondition{
+				{
+					Type:    corev1.PodReady,
+					Status:  corev1.ConditionFalse,
+					Reason:  "ContainersNotReady",
+					Message: "containers with unready status: [probe]",
+				},
+			},
+			ContainerStatuses: []corev1.ContainerStatus{
+				{
+					Name:  "polyaxon-main",
+					Ready: true,
+					State: corev1.ContainerState{Running: &corev1.ContainerStateRunning{}},
+				},
+				{
+					Name:  "polyaxon-sidecar",
+					Ready: true,
+					State: corev1.ContainerState{Running: &corev1.ContainerStateRunning{}},
+				},
+				{
+					Name:  "probe",
+					Ready: false,
+					State: corev1.ContainerState{
+						Terminated: &corev1.ContainerStateTerminated{ExitCode: 0, Reason: "Completed"},
+					},
+				},
+			},
+		}
+
+		reconciler := &JobReconciler{
+			Client: fake.NewClientBuilder().
+				WithScheme(scheme).
+				WithObjects(instance, batchJob, pod).
+				WithStatusSubresource(&apiv1.Job{}).
+				Build(),
+			Log:    zap.New(zap.UseDevMode(true)),
+			Scheme: scheme,
+		}
+
+		requests := mapPodToRequest(ctx, pod)
+		Expect(requests).To(HaveLen(1))
+		_, err := reconciler.Reconcile(ctx, requests[0])
+		Expect(err).NotTo(HaveOccurred())
+
+		persisted := &apiv1.Job{}
+		Expect(reconciler.Get(ctx, types.NamespacedName{Name: resourceName, Namespace: testNamespace}, persisted)).To(Succeed())
+		lastCondition := persisted.Status.Conditions[len(persisted.Status.Conditions)-1]
+		Expect(lastCondition.Type).To(Equal(apiv1.OperationRunning))
 	})
 })

@@ -6,6 +6,7 @@ import (
 	"github.com/go-logr/logr"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -99,20 +100,25 @@ func (r *JobReconciler) cleanUpOperation(ctx context.Context, instance *apiv1.Jo
 	return r.cleanUpJob(ctx, instance)
 }
 
+// mapPodToRequest maps a pod to the Job owning its controlling batch Job,
+// GenerateJob names the batch Job after its owning Job.
+func mapPodToRequest(_ context.Context, object client.Object) []reconcile.Request {
+	owner := metav1.GetControllerOf(object)
+	if owner == nil || owner.APIVersion != batchv1.SchemeGroupVersion.String() || owner.Kind != "Job" {
+		return nil
+	}
+	return []reconcile.Request{
+		{
+			NamespacedName: types.NamespacedName{
+				Name:      owner.Name,
+				Namespace: object.GetNamespace(),
+			},
+		},
+	}
+}
+
 // SetupWithManager register the reconciliation logic
 func (r *JobReconciler) SetupWithManager(mgr ctrl.Manager) error {
-
-	// function to convert pod events to reconcile requests for workspaces
-	mapPodToRequest := func(ctx context.Context, object client.Object) []reconcile.Request {
-		return []reconcile.Request{
-			{
-				NamespacedName: types.NamespacedName{
-					Name:      object.GetLabels()[config.PolyaxonRunIdLabel],
-					Namespace: object.GetNamespace(),
-				},
-			},
-		}
-	}
 
 	// predicate function to filter pods that are labeled with the "workspace-name" label key
 	predPodHasWSLabel := predicate.NewPredicateFuncs(func(object client.Object) bool {
