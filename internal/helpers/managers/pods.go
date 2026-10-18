@@ -131,7 +131,8 @@ func ListPods(controllerClient client.Client, namespace string, selector map[str
 	return podList, controllerClient.List(context.TODO(), podList, opt...)
 }
 
-func getPodMainContainerExitStatus(pod corev1.Pod) *MainContainerExitStatus {
+// getMainContainerStatus returns the status of the pod's main container, its first container.
+func getMainContainerStatus(pod corev1.Pod) *corev1.ContainerStatus {
 	if len(pod.Status.ContainerStatuses) == 0 {
 		return nil
 	}
@@ -141,13 +142,16 @@ func getPodMainContainerExitStatus(pod corev1.Pod) *MainContainerExitStatus {
 		containerName = pod.Spec.Containers[0].Name
 	}
 
-	var containerStatus *corev1.ContainerStatus
 	for i := range pod.Status.ContainerStatuses {
 		if pod.Status.ContainerStatuses[i].Name == containerName {
-			containerStatus = &pod.Status.ContainerStatuses[i]
-			break
+			return &pod.Status.ContainerStatuses[i]
 		}
 	}
+	return nil
+}
+
+func getPodMainContainerExitStatus(pod corev1.Pod) *MainContainerExitStatus {
+	containerStatus := getMainContainerStatus(pod)
 	if containerStatus == nil {
 		return nil
 	}
@@ -173,7 +177,7 @@ func getPodMainContainerExitStatus(pod corev1.Pod) *MainContainerExitStatus {
 
 	return &MainContainerExitStatus{
 		PodName:         pod.Name,
-		ContainerName:   containerName,
+		ContainerName:   containerStatus.Name,
 		ExitCode:        termination.ExitCode,
 		Reason:          termination.Reason,
 		Message:         termination.Message,
@@ -218,6 +222,23 @@ func GetMainContainerExitStatusByInstance(controllerClient client.Client, instan
 		return nil, nil
 	}
 	return GetMainContainerExitStatus(*podsList), nil
+}
+
+// IsMainContainerRunning reports whether the main container of one of the operation's pods is running.
+func IsMainContainerRunning(controllerClient client.Client, instanceID string, namespace string) bool {
+	selector := map[string]string{
+		"app.kubernetes.io/instance": instanceID,
+	}
+	podsList, err := ListPods(controllerClient, namespace, selector)
+	if err != nil {
+		return false
+	}
+	for _, pod := range podsList.Items {
+		if status := getMainContainerStatus(pod); status != nil && status.State.Running != nil {
+			return true
+		}
+	}
+	return false
 }
 
 // InvalidImageNameReason is the waiting reason kubelet sets when it can't parse an image reference.

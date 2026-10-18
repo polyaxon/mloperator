@@ -171,7 +171,8 @@ func (r *JobReconciler) reconcileJobStatus(instance *apiv1.Job, job batchv1.Job)
 				log.Info("Job has failed attempts", "Failed", job.Status.Failed, "Active", job.Status.Active)
 				return true
 			}
-		} else if job.Status.Active > 0 {
+		} else if job.Status.Active > 0 && managers.IsMainContainerRunning(r.Client, instanceID, instance.Namespace) {
+			// Active also counts pending pods
 			if updated := instance.Status.LogRunning(); updated {
 				log.Info("Job is running", "Active", job.Status.Active)
 				return true

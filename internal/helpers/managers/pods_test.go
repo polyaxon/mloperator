@@ -139,3 +139,40 @@ func TestGetInvalidImageName(t *testing.T) {
 		}
 	})
 }
+
+func TestIsMainContainerRunning(t *testing.T) {
+	running := func(name string) corev1.ContainerStatus {
+		return corev1.ContainerStatus{
+			Name:  name,
+			State: corev1.ContainerState{Running: &corev1.ContainerStateRunning{}},
+		}
+	}
+	for _, tc := range []struct {
+		name     string
+		statuses []corev1.ContainerStatus
+		want     bool
+	}{
+		{name: "main running", statuses: []corev1.ContainerStatus{running("polyaxon-main")}, want: true},
+		{name: "main waiting", statuses: []corev1.ContainerStatus{waitingStatus("ContainerCreating", "")}},
+		{
+			name:     "sidecar running before main",
+			statuses: []corev1.ContainerStatus{running("polyaxon-sidecar"), waitingStatus("ContainerCreating", "")},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			pod := newPendingPod("op-pod", "op")
+			pod.Spec.Containers = []corev1.Container{{Name: "polyaxon-main"}, {Name: "polyaxon-sidecar"}}
+			pod.Status.ContainerStatuses = tc.statuses
+
+			if got := IsMainContainerRunning(newPodsClient(t, pod), "op", "default"); got != tc.want {
+				t.Fatalf("got %v, want %v", got, tc.want)
+			}
+		})
+	}
+
+	t.Run("no pods", func(t *testing.T) {
+		if IsMainContainerRunning(newPodsClient(t), "op", "default") {
+			t.Fatal("main container running without pods")
+		}
+	})
+}

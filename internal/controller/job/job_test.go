@@ -695,6 +695,35 @@ var _ = Describe("Job Controller - Deleted Job Detection", func() {
 			Expect(condition.Reason).To(Equal("InvalidImageName"))
 			Expect(condition.Message).To(Equal(`couldn't parse image name "Busybox:latest"`))
 		})
+
+		It("should not mark jobs running before the main container starts", func() {
+			instance := newInstance("test-job-main-not-started", true)
+			pod := &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-job-main-not-started-pod",
+					Namespace: testNamespace,
+					Labels:    map[string]string{"app.kubernetes.io/instance": instance.Name},
+				},
+				Status: corev1.PodStatus{
+					Phase:      corev1.PodPending,
+					Conditions: []corev1.PodCondition{{Type: corev1.PodScheduled, Status: corev1.ConditionTrue}},
+					ContainerStatuses: []corev1.ContainerStatus{
+						{
+							Name: "polyaxon-main",
+							State: corev1.ContainerState{
+								Waiting: &corev1.ContainerStateWaiting{Reason: "ContainerCreating"},
+							},
+						},
+					},
+				},
+			}
+			setFakeClient(instance, pod)
+
+			updated := reconciler.reconcileJobStatus(instance, newJobWithoutConditions(instance.Name, 1, 0))
+
+			Expect(updated).To(BeFalse())
+			Expect(instance.Status.Conditions).To(BeEmpty())
+		})
 	})
 })
 
