@@ -198,6 +198,34 @@ var _ = Describe("KfJob Controller - Deleted Job Detection", func() {
 			condition := instance.Status.Conditions[len(instance.Status.Conditions)-1]
 			Expect(condition.Type).To(Equal(apiv1.OperationRunning))
 		})
+
+		It("should fail jobs whose image name is invalid", func() {
+			instance := newInstance("test-kfjob-invalid-image")
+			pod := newTransientWarningPod("test-kfjob-invalid-image-pod", instance.Name)
+			pod.Status.ContainerStatuses = []corev1.ContainerStatus{
+				{
+					Name: "polyaxon-main",
+					State: corev1.ContainerState{
+						Waiting: &corev1.ContainerStateWaiting{
+							Reason:  "InvalidImageName",
+							Message: `couldn't parse image name "Busybox:latest"`,
+						},
+					},
+				},
+			}
+			setFakeClient(instance, pod)
+			job := newKfJobWithCondition(instance.Name, kfapi.JobCreated, "JobCreated", "Job is created")
+
+			updated, err := reconciler.reconcileKfJobStatus(instance, job)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(updated).To(BeTrue())
+			Expect(instance.Status.IsFailed()).To(BeTrue())
+			Expect(instance.Status.CompletionTime).NotTo(BeNil())
+			condition := instance.Status.Conditions[len(instance.Status.Conditions)-1]
+			Expect(condition.Reason).To(Equal("InvalidImageName"))
+			Expect(condition.Message).To(Equal(`couldn't parse image name "Busybox:latest"`))
+		})
 	})
 
 	Describe("TFJob", func() {

@@ -42,6 +42,14 @@ func (r *KfJobReconciler) reconcileKfJobStatus(instance *apiv1.KfJob, job unstru
 
 	// Check the pods
 	instanceID := instance.Labels["app.kubernetes.io/instance"]
+	if message, found := managers.GetInvalidImageName(r.Client, instanceID, instance.Namespace); found {
+		if updated := instance.Status.LogFailed(managers.InvalidImageNameReason, message); updated {
+			instance.Status.CompletionTime = &now
+			log.Info("Job image name is invalid", "Message", message)
+			return true, nil
+		}
+		return false, nil
+	}
 	podStatus, reason, message := managers.HasUnschedulablePods(r.Client, instanceID, instance.Namespace)
 	exitStatus, err := managers.GetMainContainerExitStatusByInstance(r.Client, instanceID, instance.Namespace)
 	if err != nil {

@@ -139,6 +139,15 @@ func (r *ServiceReconciler) reconcileDeploymentStatus(instance *apiv1.Service, d
 
 	// Check the pods
 	instanceID := instance.Labels["app.kubernetes.io/instance"]
+	if message, found := managers.GetInvalidImageName(r.Client, instanceID, instance.Namespace); found {
+		if updated := instance.Status.LogFailed(managers.InvalidImageNameReason, message); updated {
+			now := metav1.Now()
+			instance.Status.CompletionTime = &now
+			log.Info("Service image name is invalid", "Message", message)
+			return true
+		}
+		return false
+	}
 	podStatus, reason, message := managers.HasUnschedulablePods(r.Client, instanceID, instance.Namespace)
 	if podStatus == apiv1.OperationWarning {
 		log.V(1).Info("Service has unschedulable pod(s)", "Reason", reason, "message", message)

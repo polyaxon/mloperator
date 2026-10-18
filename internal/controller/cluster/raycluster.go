@@ -150,6 +150,14 @@ func (r *ClusterReconciler) reconcileRayClusterStatus(instance *apiv1.Cluster, j
 
 	// Check the pods
 	instanceID := instance.Labels["app.kubernetes.io/instance"]
+	if message, found := managers.GetInvalidImageName(r.Client, instanceID, instance.Namespace); found {
+		if updated := instance.Status.LogFailed(managers.InvalidImageNameReason, message); updated {
+			instance.Status.CompletionTime = &now
+			log.Info("Cluster image name is invalid", "Message", message)
+			return true, nil
+		}
+		return false, nil
+	}
 	podStatus, reason, message := managers.HasUnschedulablePods(r.Client, instanceID, instance.Namespace)
 	if podStatus == apiv1.OperationWarning {
 		log.V(1).Info("Service has unschedulable pod(s)", "Reason", reason, "message", message)

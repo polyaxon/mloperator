@@ -104,3 +104,38 @@ func TestFormatMainContainerFailureMessage(t *testing.T) {
 		}
 	}
 }
+
+func TestGetInvalidImageName(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		init   bool
+		reason string
+		found  bool
+	}{
+		{name: "main container", reason: InvalidImageNameReason, found: true},
+		{name: "init container", init: true, reason: InvalidImageNameReason, found: true},
+		{name: "image pull retries", reason: imagePullBackOffReason},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			pod := newPendingPod("op-pod", "op")
+			statuses := []corev1.ContainerStatus{waitingStatus(tc.reason, "bad image")}
+			if tc.init {
+				pod.Status.InitContainerStatuses = statuses
+			} else {
+				pod.Status.ContainerStatuses = statuses
+			}
+
+			message, found := GetInvalidImageName(newPodsClient(t, pod), "op", "default")
+
+			if found != tc.found || (found && message != "bad image") {
+				t.Fatalf("got %q %v, want found=%v", message, found, tc.found)
+			}
+		})
+	}
+
+	t.Run("no pods", func(t *testing.T) {
+		if _, found := GetInvalidImageName(newPodsClient(t), "op", "default"); found {
+			t.Fatal("found an invalid image name without pods")
+		}
+	})
+}

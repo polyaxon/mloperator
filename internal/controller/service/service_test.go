@@ -302,6 +302,45 @@ var _ = Describe("Service Controller", func() {
 			Expect(instance.Status.IsRunning()).To(BeTrue())
 			Expect(instance.Status.IsWarning()).To(BeFalse())
 		})
+
+		It("should fail services whose image name is invalid", func() {
+			labels := map[string]string{"app.kubernetes.io/instance": "test-service-invalid-image"}
+			instance := newInstance("test-service-invalid-image", labels)
+			pod := &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-service-invalid-image-pod",
+					Namespace: "default",
+					Labels:    labels,
+				},
+				Status: corev1.PodStatus{
+					Phase: corev1.PodPending,
+					Conditions: []corev1.PodCondition{
+						{Type: corev1.PodReady, Status: corev1.ConditionFalse, Reason: "ContainersNotReady"},
+					},
+					ContainerStatuses: []corev1.ContainerStatus{
+						{
+							Name: "polyaxon-main",
+							State: corev1.ContainerState{
+								Waiting: &corev1.ContainerStateWaiting{
+									Reason:  "InvalidImageName",
+									Message: `couldn't parse image name "Busybox:latest"`,
+								},
+							},
+						},
+					},
+				},
+			}
+			setFakeClient(instance, pod)
+
+			updated := reconciler.reconcileDeploymentStatus(instance, appsv1.Deployment{})
+
+			Expect(updated).To(BeTrue())
+			Expect(instance.Status.IsFailed()).To(BeTrue())
+			Expect(instance.Status.CompletionTime).NotTo(BeNil())
+			condition := instance.Status.Conditions[len(instance.Status.Conditions)-1]
+			Expect(condition.Reason).To(Equal("InvalidImageName"))
+			Expect(condition.Message).To(Equal(`couldn't parse image name "Busybox:latest"`))
+		})
 	})
 
 	Context("When handling service container exits", func() {

@@ -150,8 +150,16 @@ func (r *ClusterReconciler) reconcileDaskClusterStatus(instance *apiv1.Cluster, 
 	now := metav1.Now()
 	log := r.Log
 
-	// Get pod status for enhanced error messages (but don't let it override cluster status)
 	instanceID := instance.Labels["app.kubernetes.io/instance"]
+	if message, found := managers.GetInvalidImageName(r.Client, instanceID, instance.Namespace); found {
+		if updated := instance.Status.LogFailed(managers.InvalidImageNameReason, message); updated {
+			instance.Status.CompletionTime = &now
+			log.Info("Cluster image name is invalid", "Message", message)
+			return true, nil
+		}
+		return false, nil
+	}
+	// Get pod status for enhanced error messages (but don't let it override cluster status)
 	podStatus, reason, message := managers.HasUnschedulablePods(r.Client, instanceID, instance.Namespace)
 
 	status, ok, unerr := unstructured.NestedFieldCopy(cluster.Object, "status")

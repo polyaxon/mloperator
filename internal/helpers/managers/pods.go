@@ -220,6 +220,31 @@ func GetMainContainerExitStatusByInstance(controllerClient client.Client, instan
 	return GetMainContainerExitStatus(*podsList), nil
 }
 
+// InvalidImageNameReason is the waiting reason kubelet sets when it can't parse an image reference.
+const InvalidImageNameReason = "InvalidImageName"
+
+// GetInvalidImageName returns the message of a container whose image reference can't be parsed.
+// Kubelet retries it forever and Kubernetes never fails the pod, so the operation has to.
+func GetInvalidImageName(controllerClient client.Client, instanceID string, namespace string) (string, bool) {
+	selector := map[string]string{
+		"app.kubernetes.io/instance": instanceID,
+	}
+	podsList, err := ListPods(controllerClient, namespace, selector)
+	if err != nil {
+		return "", false
+	}
+	for _, pod := range podsList.Items {
+		for _, statuses := range [][]corev1.ContainerStatus{pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses} {
+			for _, cs := range statuses {
+				if cs.State.Waiting != nil && cs.State.Waiting.Reason == InvalidImageNameReason {
+					return cs.State.Waiting.Message, true
+				}
+			}
+		}
+	}
+	return "", false
+}
+
 // HasUnschedulablePods Detects if entity has unschedulable pods
 func HasUnschedulablePods(controllerClient client.Client, instanceID string, namespace string) (apiv1.OperationConditionType, string, string) {
 	_labels := map[string]string{
