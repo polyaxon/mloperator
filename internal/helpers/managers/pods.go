@@ -26,6 +26,12 @@ type MainContainerExitStatus struct {
 
 const imagePullBackOffReason = "ImagePullBackOff"
 
+// isPullingImage matches both reasons kubelet alternates between while it retries an image pull.
+func isPullingImage(cs corev1.ContainerStatus) bool {
+	return !cs.Ready && cs.State.Waiting != nil &&
+		(cs.State.Waiting.Reason == imagePullBackOffReason || cs.State.Waiting.Reason == "ErrImagePull")
+}
+
 func (status MainContainerExitStatus) ContainerFailedAttempts() int32 {
 	attempts := status.RestartCount
 	if status.currentExitSeen {
@@ -238,13 +244,13 @@ func HasUnschedulablePods(controllerClient client.Client, instanceID string, nam
 		if pod.Status.Phase != corev1.PodRunning && pod.Status.Conditions != nil {
 			if pod.Status.InitContainerStatuses != nil {
 				for _, cs := range pod.Status.InitContainerStatuses {
-					if !cs.Ready && cs.State.Waiting != nil && cs.State.Waiting.Reason == imagePullBackOffReason {
+					if isPullingImage(cs) {
 						return apiv1.OperationWarning, "InitContainerImagePullBackOff", cs.State.Waiting.Message
 					}
 				}
 			}
 			for _, cs := range pod.Status.ContainerStatuses {
-				if !cs.Ready && cs.State.Waiting != nil && cs.State.Waiting.Reason == imagePullBackOffReason {
+				if isPullingImage(cs) {
 					return apiv1.OperationWarning, imagePullBackOffReason, cs.State.Waiting.Message
 				}
 			}
