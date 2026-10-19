@@ -146,11 +146,7 @@ func (r *JobReconciler) reconcileJobStatus(instance *apiv1.Job, job batchv1.Job)
 				attemptPtr = &failedAttempts
 			}
 			newMessage := managers.FormatMainContainerFailureMessage(newJobCond.Message, exitStatus, attemptPtr)
-			reason := newJobCond.Reason
-			// BackoffLimitExceeded only says retries ran out; the main container says why
-			if reason == batchv1.JobReasonBackoffLimitExceeded && exitStatus != nil && exitStatus.ExitCode != 0 {
-				reason = exitStatus.FailureReason()
-			}
+			reason := jobFailureReason(newJobCond.Reason, exitStatus)
 			if updated := instance.Status.LogFailed(reason, newMessage); updated {
 				instance.Status.CompletionTime = &now
 				log.Info("Job failed", "Reason", reason, "Message", newMessage, "Failed", job.Status.Failed, "podStatus", podStatus)
@@ -187,6 +183,14 @@ func (r *JobReconciler) reconcileJobStatus(instance *apiv1.Job, job batchv1.Job)
 		return false
 	}
 	return false
+}
+
+// jobFailureReason returns the main container's failure reason when the job only says its retries ran out.
+func jobFailureReason(reason string, exitStatus *managers.MainContainerExitStatus) string {
+	if reason == batchv1.JobReasonBackoffLimitExceeded && exitStatus != nil && exitStatus.ExitCode != 0 {
+		return exitStatus.FailureReason()
+	}
+	return reason
 }
 
 func (r *JobReconciler) cleanUpJob(ctx context.Context, instance *apiv1.Job) (ctrl.Result, error) {
