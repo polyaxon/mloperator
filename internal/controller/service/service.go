@@ -272,10 +272,6 @@ func (r *ServiceReconciler) handleServiceContainerExit(ctx context.Context, inst
 		return false, nil
 	}
 
-	reason := exitStatus.Reason
-	if reason == "" {
-		reason = "ContainerFailed"
-	}
 	message := fmt.Sprintf(
 		"Main container %q in pod %q exited with code %d after %d failed attempt(s), exceeding maxRetries %d",
 		exitStatus.ContainerName,
@@ -287,7 +283,7 @@ func (r *ServiceReconciler) handleServiceContainerExit(ctx context.Context, inst
 	if exitStatus.Message != "" {
 		message = fmt.Sprintf("%s: %s", message, exitStatus.Message)
 	}
-	if updated := instance.Status.LogFailed(reason, message); updated {
+	if updated := instance.Status.LogFailed(exitStatus.FailureReason(), message); updated {
 		instance.Status.CompletionTime = &now
 		log.Info("Service main container exceeded retry budget", "pod", exitStatus.PodName, "container", exitStatus.ContainerName, "failedAttempts", exitStatus.ContainerFailedAttempts(), "maxRetries", backoffLimit)
 		if statusErr := r.Status().Update(ctx, instance); statusErr != nil {

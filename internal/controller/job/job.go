@@ -145,9 +145,14 @@ func (r *JobReconciler) reconcileJobStatus(instance *apiv1.Job, job batchv1.Job)
 				attemptPtr = &failedAttempts
 			}
 			newMessage := managers.FormatMainContainerFailureMessage(newJobCond.Message, exitStatus, attemptPtr)
-			if updated := instance.Status.LogFailed(newJobCond.Reason, newMessage); updated {
+			reason := newJobCond.Reason
+			// BackoffLimitExceeded only says retries ran out; the main container says why
+			if reason == batchv1.JobReasonBackoffLimitExceeded && exitStatus != nil && exitStatus.ExitCode != 0 {
+				reason = exitStatus.FailureReason()
+			}
+			if updated := instance.Status.LogFailed(reason, newMessage); updated {
 				instance.Status.CompletionTime = &now
-				log.Info("Job failed", "Reason", newJobCond.Reason, "Message", newMessage, "Failed", job.Status.Failed, "podStatus", podStatus)
+				log.Info("Job failed", "Reason", reason, "Message", newMessage, "Failed", job.Status.Failed, "podStatus", podStatus)
 				return true
 			}
 		}

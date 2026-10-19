@@ -614,7 +614,7 @@ var _ = Describe("Job Controller - Deleted Job Detection", func() {
 			Expect(updated).To(BeTrue())
 			Expect(instance.Status.IsFailed()).To(BeTrue())
 			condition := instance.Status.Conditions[len(instance.Status.Conditions)-1]
-			Expect(condition.Reason).To(Equal("BackoffLimitExceeded"))
+			Expect(condition.Reason).To(Equal("Error"))
 			Expect(condition.Message).To(ContainSubstring("after 3 failed attempt(s)"))
 			Expect(condition.Message).To(ContainSubstring(`Main container "trainer" in pod "test-job-backoff-details-pod"`))
 			Expect(condition.Message).To(ContainSubstring("exit code 2 (Error): bad args"))
@@ -630,6 +630,21 @@ var _ = Describe("Job Controller - Deleted Job Detection", func() {
 			condition := instance.Status.Conditions[len(instance.Status.Conditions)-1]
 			Expect(condition.Reason).To(Equal("BackoffLimitExceeded"))
 			Expect(condition.Message).To(Equal("Job has reached the specified backoff limit"))
+		})
+
+		It("should keep DeadlineExceeded when the main container was killed", func() {
+			instance := newInstance("test-job-deadline", true)
+			pod := newTerminatedPod("test-job-deadline-pod", instance.Name)
+			setFakeClient(instance, pod)
+			job := newBackoffLimitJob(instance.Name, 1)
+			job.Status.Conditions[0].Reason = batchv1.JobReasonDeadlineExceeded
+			job.Status.Conditions[0].Message = "Job was active longer than specified deadline"
+
+			updated := reconciler.reconcileJobStatus(instance, job)
+
+			Expect(updated).To(BeTrue())
+			condition := instance.Status.Conditions[len(instance.Status.Conditions)-1]
+			Expect(condition.Reason).To(Equal(batchv1.JobReasonDeadlineExceeded))
 		})
 
 		It("should not let transient pod warnings mask terminal failure", func() {

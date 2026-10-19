@@ -40,6 +40,14 @@ func (status MainContainerExitStatus) ContainerFailedAttempts() int32 {
 	return attempts
 }
 
+// FailureReason returns the main container's termination reason, such as Error or OOMKilled.
+func (status MainContainerExitStatus) FailureReason() string {
+	if status.Reason == "" {
+		return "ContainerFailed"
+	}
+	return status.Reason
+}
+
 func FormatMainContainerFailureMessage(entityMessage string, exitStatus *MainContainerExitStatus, attempts *int32) string {
 	if exitStatus == nil {
 		return entityMessage
