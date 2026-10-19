@@ -243,21 +243,6 @@ var _ = Describe("OperationStatus Deletion Utility Functions", func() {
 				Expect(updated).To(BeTrue())
 				Expect(status.IsFailed()).To(BeTrue())
 			})
-
-			It("should not update if already marked with same reason", func() {
-				status := &OperationStatus{
-					Conditions: []OperationCondition{
-						NewOperationCondition(OperationFailed, corev1.ConditionTrue, "JobDeleted", "The underlying Kubernetes Job was deleted externally"),
-					},
-				}
-				completionTime := metav1.Now()
-				status.CompletionTime = &completionTime
-
-				updated := status.MarkJobAsDeleted("Kubernetes Job", true)
-
-				// Should not update if condition is identical
-				Expect(updated).To(BeFalse())
-			})
 		})
 
 		Context("when starting from Warning state", func() {

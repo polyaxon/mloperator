@@ -3,7 +3,6 @@ package config
 import (
 	"os"
 	"strconv"
-	"strings"
 )
 
 const (
@@ -76,11 +75,11 @@ func GetStrEnv(key, defaultValue string) string {
 }
 
 // GetBoolEnv returns an environment bool variable given by key or return a default value.
-// Accepts: "true", "True", "TRUE", "1" as true values
 func GetBoolEnv(key string, defaultValue bool) bool {
-	value := strings.ToLower(GetStrEnv(key, "false"))
-	if value == "true" || value == "1" {
-		return true
+	if valueStr, ok := os.LookupEnv(key); ok {
+		if value, err := strconv.ParseBool(valueStr); err == nil {
+			return value
+		}
 	}
 	return defaultValue
 }
