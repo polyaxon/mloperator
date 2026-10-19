@@ -311,3 +311,17 @@ var _ = Describe("LogWarning", func() {
 		Expect(status.LogWarning("ContainersNotReady", "containers with unready status: [polyaxon-main]")).To(BeFalse())
 	})
 })
+
+var _ = Describe("LogRunning", func() {
+	It("should set its own transition time after another condition", func() {
+		starting := NewOperationCondition(OperationStarting, corev1.ConditionTrue, "OperatorController", "Operation is starting")
+		starting.LastTransitionTime = metav1.NewTime(time.Now().Add(-time.Hour))
+		status := &OperationStatus{Conditions: []OperationCondition{starting}}
+
+		Expect(status.LogRunning()).To(BeTrue())
+
+		running := status.Conditions[len(status.Conditions)-1]
+		Expect(running.Type).To(Equal(OperationRunning))
+		Expect(running.LastTransitionTime.Time).To(BeTemporally("~", time.Now(), time.Minute))
+	})
+})

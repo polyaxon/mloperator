@@ -106,8 +106,8 @@ func getOrUpdateOperationCondition(currentCond *OperationCondition, conditionTyp
 		return &newCond, false
 	}
 
-	// Do not update lastTransitionTime if the status of the condition doesn't change.
-	if currentCond != nil && currentCond.Status == newCond.Status {
+	// Do not update lastTransitionTime if the same condition only changes its reason or message.
+	if currentCond != nil && currentCond.Type == newCond.Type && currentCond.Status == newCond.Status {
 		newCond.LastTransitionTime = currentCond.LastTransitionTime
 	}
 
