@@ -143,8 +143,8 @@ func hasOperationCondition(status OperationStatus, condType OperationConditionTy
 
 // hasOperationCondition checks if a status's last codition is of a specific type
 func hasLastOperationCondition(status OperationStatus, condType OperationConditionType) bool {
-	cond := status.Conditions[len(status.Conditions)-1]
-	if cond.Type == condType && cond.Status == corev1.ConditionTrue {
+	cond := getLastEntityCondition(status)
+	if cond != nil && cond.Type == condType && cond.Status == corev1.ConditionTrue {
 		return true
 	}
 	return false

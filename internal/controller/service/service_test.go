@@ -80,6 +80,25 @@ var _ = Describe("Service Controller", func() {
 			Expect(duration).To(BeNil())
 		})
 
+		It("should not cull a service without conditions yet", func() {
+			timeout := int32(3600)
+			instance := &apiv1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-service-no-conditions",
+					Namespace: "default",
+				},
+				Termination: apiv1.TerminationSpec{
+					Culling: &apiv1.CullingSpec{
+						Timeout: &timeout,
+					},
+				},
+			}
+
+			duration, err := reconciler.handleCulling(ctx, instance)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(duration).To(BeNil())
+		})
+
 		It("should requeue if service is running and probe fails", func() {
 			timeout := int32(3600)
 			instance := &apiv1.Service{
