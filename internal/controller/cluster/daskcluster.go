@@ -174,6 +174,19 @@ func (r *ClusterReconciler) getDaskReplicaFailure(instance *apiv1.Cluster) (apps
 	return appsv1.DeploymentCondition{}, false
 }
 
+// daskComponentLabel is set by the Dask operator on scheduler and worker pods.
+const daskComponentLabel = "dask.org/component"
+
+// isDaskSchedulerRunning reports whether the main container of the cluster's scheduler pod is running.
+func isDaskSchedulerRunning(pods []corev1.Pod) bool {
+	for _, pod := range pods {
+		if pod.Labels[daskComponentLabel] == "scheduler" && managers.IsMainContainerRunning([]corev1.Pod{pod}) {
+			return true
+		}
+	}
+	return false
+}
+
 func (r *ClusterReconciler) reconcileDaskClusterStatus(instance *apiv1.Cluster, cluster unstructured.Unstructured) (bool, error) {
 	now := metav1.Now()
 	log := r.Log
@@ -238,6 +251,10 @@ func (r *ClusterReconciler) reconcileDaskClusterStatus(instance *apiv1.Cluster, 
 				log.Info("Cluster Deployment cannot create pods", "Reason", cond.Reason, "Message", cond.Message)
 				return true, nil
 			}
+			return false, nil
+		}
+		// The Dask operator reports Running once the scheduler Service exists, before the scheduler starts
+		if !isDaskSchedulerRunning(pods.Items) {
 			return false, nil
 		}
 		instance.Status.LogRunning()

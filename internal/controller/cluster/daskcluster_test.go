@@ -34,6 +34,27 @@ var _ = Describe("Cluster Controller - Dask status", func() {
 		cluster    unstructured.Unstructured
 	)
 
+	running := corev1.ContainerState{Running: &corev1.ContainerStateRunning{}}
+
+	// newPod returns a pod of the given Dask component whose main container is in the given state
+	newPod := func(component string, state corev1.ContainerState) *corev1.Pod {
+		return &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name + "-" + component,
+				Namespace: testNamespace,
+				Labels: map[string]string{
+					"app.kubernetes.io/instance": name,
+					daskClusterNameLabel:         name,
+					daskComponentLabel:           component,
+				},
+			},
+			Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: component}}},
+			Status: corev1.PodStatus{
+				ContainerStatuses: []corev1.ContainerStatus{{Name: component, State: state}},
+			},
+		}
+	}
+
 	BeforeEach(func() {
 		ctx = context.Background()
 		instance = &apiv1.Cluster{
@@ -96,6 +117,7 @@ var _ = Describe("Cluster Controller - Dask status", func() {
 	})
 
 	It("should report Running once the Deployment recovers", func() {
+		Expect(reconciler.Create(ctx, newPod("scheduler", running))).To(Succeed())
 		_, err := reconciler.reconcileDaskClusterStatus(instance, cluster)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -105,6 +127,27 @@ var _ = Describe("Cluster Controller - Dask status", func() {
 		Expect(reconciler.Status().Update(ctx, current)).To(Succeed())
 
 		updated, err := reconciler.reconcileDaskClusterStatus(instance, cluster)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(updated).To(BeTrue())
+		Expect(instance.Status.IsRunning()).To(BeTrue())
+	})
+
+	It("should report Running only once the scheduler starts", func() {
+		instance.Status.LogStarting()
+		Expect(reconciler.Delete(ctx, deployment)).To(Succeed())
+		Expect(reconciler.Create(ctx, newPod("worker", running))).To(Succeed())
+		scheduler := newPod("scheduler", corev1.ContainerState{Waiting: &corev1.ContainerStateWaiting{Reason: "ContainerCreating"}})
+		Expect(reconciler.Create(ctx, scheduler)).To(Succeed())
+
+		updated, err := reconciler.reconcileDaskClusterStatus(instance, cluster)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(updated).To(BeFalse())
+		Expect(instance.Status.Conditions[len(instance.Status.Conditions)-1].Type).To(Equal(apiv1.OperationStarting))
+
+		scheduler.Status.ContainerStatuses[0].State = running
+		Expect(reconciler.Status().Update(ctx, scheduler)).To(Succeed())
+
+		updated, err = reconciler.reconcileDaskClusterStatus(instance, cluster)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(updated).To(BeTrue())
 		Expect(instance.Status.IsRunning()).To(BeTrue())
