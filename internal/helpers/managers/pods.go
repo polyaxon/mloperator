@@ -139,6 +139,11 @@ func ListPods(controllerClient client.Client, namespace string, selector map[str
 	return podList, controllerClient.List(context.TODO(), podList, opt...)
 }
 
+// ListInstancePods returns the pods of an operation
+func ListInstancePods(controllerClient client.Client, instanceID string, namespace string) (*corev1.PodList, error) {
+	return ListPods(controllerClient, namespace, map[string]string{"app.kubernetes.io/instance": instanceID})
+}
+
 // getMainContainerStatus returns the status of the pod's main container, its first container.
 func getMainContainerStatus(pod corev1.Pod) *corev1.ContainerStatus {
 	if len(pod.Status.ContainerStatuses) == 0 {
@@ -194,10 +199,10 @@ func getPodMainContainerExitStatus(pod corev1.Pod) *MainContainerExitStatus {
 	}
 }
 
-func GetMainContainerExitStatus(pods corev1.PodList) *MainContainerExitStatus {
+func GetMainContainerExitStatus(pods []corev1.Pod) *MainContainerExitStatus {
 	var failedStatus *MainContainerExitStatus
 	var succeededStatus *MainContainerExitStatus
-	for _, pod := range pods.Items {
+	for _, pod := range pods {
 		status := getPodMainContainerExitStatus(pod)
 		if status == nil {
 			continue
@@ -218,30 +223,9 @@ func GetMainContainerExitStatus(pods corev1.PodList) *MainContainerExitStatus {
 	return succeededStatus
 }
 
-func GetMainContainerExitStatusByInstance(controllerClient client.Client, instanceID string, namespace string) (*MainContainerExitStatus, error) {
-	selector := map[string]string{
-		"app.kubernetes.io/instance": instanceID,
-	}
-	podsList, err := ListPods(controllerClient, namespace, selector)
-	if err != nil {
-		return nil, fmt.Errorf("list pods: %w", err)
-	}
-	if len(podsList.Items) == 0 {
-		return nil, nil
-	}
-	return GetMainContainerExitStatus(*podsList), nil
-}
-
 // IsMainContainerRunning reports whether the main container of one of the operation's pods is running.
-func IsMainContainerRunning(controllerClient client.Client, instanceID string, namespace string) bool {
-	selector := map[string]string{
-		"app.kubernetes.io/instance": instanceID,
-	}
-	podsList, err := ListPods(controllerClient, namespace, selector)
-	if err != nil {
-		return false
-	}
-	for _, pod := range podsList.Items {
+func IsMainContainerRunning(pods []corev1.Pod) bool {
+	for _, pod := range pods {
 		if status := getMainContainerStatus(pod); status != nil && status.State.Running != nil {
 			return true
 		}
@@ -254,15 +238,8 @@ const InvalidImageNameReason = "InvalidImageName"
 
 // GetInvalidImageName returns the message of a container whose image reference can't be parsed.
 // Kubelet retries it forever and Kubernetes never fails the pod, so the operation has to.
-func GetInvalidImageName(controllerClient client.Client, instanceID string, namespace string) (string, bool) {
-	selector := map[string]string{
-		"app.kubernetes.io/instance": instanceID,
-	}
-	podsList, err := ListPods(controllerClient, namespace, selector)
-	if err != nil {
-		return "", false
-	}
-	for _, pod := range podsList.Items {
+func GetInvalidImageName(pods []corev1.Pod) (string, bool) {
+	for _, pod := range pods {
 		for _, statuses := range [][]corev1.ContainerStatus{pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses} {
 			for _, cs := range statuses {
 				if cs.State.Waiting != nil && cs.State.Waiting.Reason == InvalidImageNameReason {
@@ -275,15 +252,11 @@ func GetInvalidImageName(controllerClient client.Client, instanceID string, name
 }
 
 // HasUnschedulablePods Detects if entity has unschedulable pods
-func HasUnschedulablePods(controllerClient client.Client, instanceID string, namespace string) (apiv1.OperationConditionType, string, string) {
-	_labels := map[string]string{
-		"app.kubernetes.io/instance": instanceID,
-	}
-	podsList, err := ListPods(controllerClient, namespace, _labels)
-	if err != nil || len(podsList.Items) < 1 {
+func HasUnschedulablePods(pods []corev1.Pod) (apiv1.OperationConditionType, string, string) {
+	if len(pods) < 1 {
 		return apiv1.OperationStarting, "PodNotReady", "Operation has no pods yet."
 	}
-	for _, pod := range podsList.Items {
+	for _, pod := range pods {
 		if pod.Status.Phase == corev1.PodFailed {
 			for _, cs := range pod.Status.ContainerStatuses {
 				if cs.State.Terminated != nil && cs.State.Terminated.ExitCode > 0 {

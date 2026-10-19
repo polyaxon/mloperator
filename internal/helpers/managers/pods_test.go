@@ -6,21 +6,9 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	apiv1 "github.com/polyaxon/mloperator/api/v1"
 )
-
-func newPodsClient(t *testing.T, pods ...client.Object) client.Client {
-	t.Helper()
-	scheme := runtime.NewScheme()
-	if err := corev1.AddToScheme(scheme); err != nil {
-		t.Fatal(err)
-	}
-	return fake.NewClientBuilder().WithScheme(scheme).WithObjects(pods...).Build()
-}
 
 func newPendingPod(name string, instanceID string) *corev1.Pod {
 	return &corev1.Pod{
@@ -70,7 +58,7 @@ func TestHasUnschedulablePodsReportsErrImagePullAsImagePullBackOff(t *testing.T)
 				pod.Status.ContainerStatuses = statuses
 			}
 
-			podStatus, reason, message := HasUnschedulablePods(newPodsClient(t, pod), "op", "default")
+			podStatus, reason, message := HasUnschedulablePods([]corev1.Pod{*pod})
 
 			if podStatus != apiv1.OperationWarning || reason != tc.reason || message != "pull access denied" {
 				t.Fatalf("got %q %q %q, want Warning %q %q", podStatus, reason, message, tc.reason, "pull access denied")
@@ -125,7 +113,7 @@ func TestGetInvalidImageName(t *testing.T) {
 				pod.Status.ContainerStatuses = statuses
 			}
 
-			message, found := GetInvalidImageName(newPodsClient(t, pod), "op", "default")
+			message, found := GetInvalidImageName([]corev1.Pod{*pod})
 
 			if found != tc.found || (found && message != "bad image") {
 				t.Fatalf("got %q %v, want found=%v", message, found, tc.found)
@@ -134,7 +122,7 @@ func TestGetInvalidImageName(t *testing.T) {
 	}
 
 	t.Run("no pods", func(t *testing.T) {
-		if _, found := GetInvalidImageName(newPodsClient(t), "op", "default"); found {
+		if _, found := GetInvalidImageName(nil); found {
 			t.Fatal("found an invalid image name without pods")
 		}
 	})
@@ -164,14 +152,14 @@ func TestIsMainContainerRunning(t *testing.T) {
 			pod.Spec.Containers = []corev1.Container{{Name: "polyaxon-main"}, {Name: "polyaxon-sidecar"}}
 			pod.Status.ContainerStatuses = tc.statuses
 
-			if got := IsMainContainerRunning(newPodsClient(t, pod), "op", "default"); got != tc.want {
+			if got := IsMainContainerRunning([]corev1.Pod{*pod}); got != tc.want {
 				t.Fatalf("got %v, want %v", got, tc.want)
 			}
 		})
 	}
 
 	t.Run("no pods", func(t *testing.T) {
-		if IsMainContainerRunning(newPodsClient(t), "op", "default") {
+		if IsMainContainerRunning(nil) {
 			t.Fatal("main container running without pods")
 		}
 	})

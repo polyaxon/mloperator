@@ -151,7 +151,11 @@ func (r *ClusterReconciler) reconcileDaskClusterStatus(instance *apiv1.Cluster, 
 	log := r.Log
 
 	instanceID := instance.Labels["app.kubernetes.io/instance"]
-	if message, found := managers.GetInvalidImageName(r.Client, instanceID, instance.Namespace); found {
+	pods, err := managers.ListInstancePods(r.Client, instanceID, instance.Namespace)
+	if err != nil {
+		log.Error(err, "List pods error")
+	}
+	if message, found := managers.GetInvalidImageName(pods.Items); found {
 		if updated := instance.Status.LogFailed(managers.InvalidImageNameReason, message); updated {
 			instance.Status.CompletionTime = &now
 			log.Info("Cluster image name is invalid", "Message", message)
@@ -160,7 +164,7 @@ func (r *ClusterReconciler) reconcileDaskClusterStatus(instance *apiv1.Cluster, 
 		return false, nil
 	}
 	// Get pod status for enhanced error messages (but don't let it override cluster status)
-	podStatus, reason, message := managers.HasUnschedulablePods(r.Client, instanceID, instance.Namespace)
+	podStatus, reason, message := managers.HasUnschedulablePods(pods.Items)
 
 	status, ok, unerr := unstructured.NestedFieldCopy(cluster.Object, "status")
 	if !ok {
@@ -175,7 +179,7 @@ func (r *ClusterReconciler) reconcileDaskClusterStatus(instance *apiv1.Cluster, 
 
 	statusMap := status.(map[string]interface{})
 	clusterStatus := daskapi.DaskClusterStatus{}
-	err := runtime.DefaultUnstructuredConverter.FromUnstructured(statusMap, &clusterStatus)
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(statusMap, &clusterStatus)
 	if err != nil {
 		log.Error(err, "Convert unstructured to status error")
 		return false, err

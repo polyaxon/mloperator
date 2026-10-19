@@ -139,7 +139,11 @@ func (r *ServiceReconciler) reconcileDeploymentStatus(instance *apiv1.Service, d
 
 	// Check the pods
 	instanceID := instance.Labels["app.kubernetes.io/instance"]
-	if message, found := managers.GetInvalidImageName(r.Client, instanceID, instance.Namespace); found {
+	pods, err := managers.ListInstancePods(r.Client, instanceID, instance.Namespace)
+	if err != nil {
+		log.Error(err, "List pods error")
+	}
+	if message, found := managers.GetInvalidImageName(pods.Items); found {
 		if updated := instance.Status.LogFailed(managers.InvalidImageNameReason, message); updated {
 			now := metav1.Now()
 			instance.Status.CompletionTime = &now
@@ -148,7 +152,7 @@ func (r *ServiceReconciler) reconcileDeploymentStatus(instance *apiv1.Service, d
 		}
 		return false
 	}
-	podStatus, reason, message := managers.HasUnschedulablePods(r.Client, instanceID, instance.Namespace)
+	podStatus, reason, message := managers.HasUnschedulablePods(pods.Items)
 	if podStatus == apiv1.OperationWarning {
 		log.V(1).Info("Service has unschedulable pod(s)", "Reason", reason, "message", message)
 		if updated := instance.Status.LogWarning(reason, message); updated {
@@ -236,9 +240,13 @@ func (r *ServiceReconciler) handleServiceContainerExit(ctx context.Context, inst
 		return false, nil
 	}
 
-	exitStatus, err := managers.GetMainContainerExitStatusByInstance(r.Client, instanceID, instance.Namespace)
-	if err != nil || exitStatus == nil {
+	pods, err := managers.ListInstancePods(r.Client, instanceID, instance.Namespace)
+	if err != nil {
 		return false, err
+	}
+	exitStatus := managers.GetMainContainerExitStatus(pods.Items)
+	if exitStatus == nil {
+		return false, nil
 	}
 
 	replicas := int32(managers.DefaultServiceReplicas)

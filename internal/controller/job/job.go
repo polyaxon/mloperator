@@ -105,7 +105,11 @@ func (r *JobReconciler) reconcileJobStatus(instance *apiv1.Job, job batchv1.Job)
 	log := r.Log
 
 	instanceID := instance.Labels["app.kubernetes.io/instance"]
-	if message, found := managers.GetInvalidImageName(r.Client, instanceID, instance.Namespace); found {
+	pods, err := managers.ListInstancePods(r.Client, instanceID, instance.Namespace)
+	if err != nil {
+		log.Error(err, "List pods error")
+	}
+	if message, found := managers.GetInvalidImageName(pods.Items); found {
 		if updated := instance.Status.LogFailed(managers.InvalidImageNameReason, message); updated {
 			instance.Status.CompletionTime = &now
 			log.Info("Job image name is invalid", "Message", message)
@@ -113,11 +117,8 @@ func (r *JobReconciler) reconcileJobStatus(instance *apiv1.Job, job batchv1.Job)
 		}
 		return false
 	}
-	podStatus, reason, message := managers.HasUnschedulablePods(r.Client, instanceID, instance.Namespace)
-	exitStatus, err := managers.GetMainContainerExitStatusByInstance(r.Client, instanceID, instance.Namespace)
-	if err != nil {
-		log.Error(err, "Get main container exit status error")
-	}
+	podStatus, reason, message := managers.HasUnschedulablePods(pods.Items)
+	exitStatus := managers.GetMainContainerExitStatus(pods.Items)
 
 	if len(job.Status.Conditions) > 0 {
 		newJobCond := job.Status.Conditions[len(job.Status.Conditions)-1]
@@ -176,7 +177,7 @@ func (r *JobReconciler) reconcileJobStatus(instance *apiv1.Job, job batchv1.Job)
 				log.Info("Job has failed attempts", "Failed", job.Status.Failed, "Active", job.Status.Active)
 				return true
 			}
-		} else if job.Status.Active > 0 && managers.IsMainContainerRunning(r.Client, instanceID, instance.Namespace) {
+		} else if job.Status.Active > 0 && managers.IsMainContainerRunning(pods.Items) {
 			// Active also counts pending pods
 			if updated := instance.Status.LogRunning(); updated {
 				log.Info("Job is running", "Active", job.Status.Active)

@@ -150,7 +150,11 @@ func (r *ClusterReconciler) reconcileRayClusterStatus(instance *apiv1.Cluster, j
 
 	// Check the pods
 	instanceID := instance.Labels["app.kubernetes.io/instance"]
-	if message, found := managers.GetInvalidImageName(r.Client, instanceID, instance.Namespace); found {
+	pods, err := managers.ListInstancePods(r.Client, instanceID, instance.Namespace)
+	if err != nil {
+		log.Error(err, "List pods error")
+	}
+	if message, found := managers.GetInvalidImageName(pods.Items); found {
 		if updated := instance.Status.LogFailed(managers.InvalidImageNameReason, message); updated {
 			instance.Status.CompletionTime = &now
 			log.Info("Cluster image name is invalid", "Message", message)
@@ -158,7 +162,7 @@ func (r *ClusterReconciler) reconcileRayClusterStatus(instance *apiv1.Cluster, j
 		}
 		return false, nil
 	}
-	podStatus, reason, message := managers.HasUnschedulablePods(r.Client, instanceID, instance.Namespace)
+	podStatus, reason, message := managers.HasUnschedulablePods(pods.Items)
 	if podStatus == apiv1.OperationWarning {
 		log.V(1).Info("Service has unschedulable pod(s)", "Reason", reason, "message", message)
 		if updated := instance.Status.LogWarning(reason, message); updated {
@@ -181,7 +185,7 @@ func (r *ClusterReconciler) reconcileRayClusterStatus(instance *apiv1.Cluster, j
 
 	statusMap := status.(map[string]interface{})
 	clusterStatus := rayapi.RayClusterStatus{}
-	err := runtime.DefaultUnstructuredConverter.FromUnstructured(statusMap, &clusterStatus)
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(statusMap, &clusterStatus)
 	if err != nil {
 		log.Error(err, "Convert unstructured to status error")
 		return false, err
