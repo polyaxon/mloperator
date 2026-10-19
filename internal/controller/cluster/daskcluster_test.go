@@ -152,4 +152,31 @@ var _ = Describe("Cluster Controller - Dask status", func() {
 		Expect(updated).To(BeTrue())
 		Expect(instance.Status.IsRunning()).To(BeTrue())
 	})
+
+	It("should report a scheduler that can't pull its image as Warning", func() {
+		const pullMessage = `Back-off pulling image "daskdev/dask:missing"`
+		instance.Status.LogStarting()
+		Expect(reconciler.Delete(ctx, deployment)).To(Succeed())
+		scheduler := newPod("scheduler", corev1.ContainerState{Waiting: &corev1.ContainerStateWaiting{Reason: "ImagePullBackOff", Message: pullMessage}})
+		scheduler.Status.Phase = corev1.PodPending
+		scheduler.Status.Conditions = []corev1.PodCondition{{Type: corev1.PodReady, Status: corev1.ConditionFalse, Reason: "ContainersNotReady"}}
+		Expect(reconciler.Create(ctx, scheduler)).To(Succeed())
+
+		updated, err := reconciler.reconcileDaskClusterStatus(instance, cluster)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(updated).To(BeTrue())
+		condition := instance.Status.Conditions[len(instance.Status.Conditions)-1]
+		Expect(condition.Type).To(Equal(apiv1.OperationWarning))
+		Expect(condition.Reason).To(Equal("ImagePullBackOff"))
+		Expect(condition.Message).To(Equal(pullMessage))
+
+		scheduler.Status.Phase = corev1.PodRunning
+		scheduler.Status.ContainerStatuses[0].State = running
+		Expect(reconciler.Status().Update(ctx, scheduler)).To(Succeed())
+
+		updated, err = reconciler.reconcileDaskClusterStatus(instance, cluster)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(updated).To(BeTrue())
+		Expect(instance.Status.IsRunning()).To(BeTrue())
+	})
 })

@@ -255,6 +255,12 @@ func (r *ClusterReconciler) reconcileDaskClusterStatus(instance *apiv1.Cluster, 
 		}
 		// The Dask operator reports Running once the scheduler Service exists, before the scheduler starts
 		if !isDaskSchedulerRunning(pods.Items) {
+			if podStatus == apiv1.OperationWarning {
+				if updated := instance.Status.LogWarning(reason, message); updated {
+					log.Info("Cluster scheduler is not running", "Reason", reason, "Message", message)
+					return true, nil
+				}
+			}
 			return false, nil
 		}
 		instance.Status.LogRunning()
