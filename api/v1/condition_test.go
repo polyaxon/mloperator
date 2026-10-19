@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -281,5 +283,31 @@ var _ = Describe("OperationStatus Deletion Utility Functions", func() {
 				Expect(status.Conditions).To(HaveLen(1))
 			})
 		})
+	})
+})
+
+var _ = Describe("LogWarning", func() {
+	It("should refresh the message while the reason stays the same", func() {
+		cond := NewOperationCondition(OperationWarning, corev1.ConditionTrue, "ContainersNotReady", "containers with unready status: ")
+		transitionTime := metav1.NewTime(time.Now().Add(-time.Hour))
+		cond.LastTransitionTime = transitionTime
+		status := &OperationStatus{Conditions: []OperationCondition{cond}}
+
+		updated := status.LogWarning("ContainersNotReady", "containers with unready status: [polyaxon-main]")
+
+		Expect(updated).To(BeTrue())
+		Expect(status.Conditions).To(HaveLen(1))
+		Expect(status.Conditions[0].Message).To(Equal("containers with unready status: [polyaxon-main]"))
+		Expect(status.Conditions[0].LastTransitionTime).To(Equal(transitionTime))
+	})
+
+	It("should not update an unchanged warning", func() {
+		status := &OperationStatus{
+			Conditions: []OperationCondition{
+				NewOperationCondition(OperationWarning, corev1.ConditionTrue, "ContainersNotReady", "containers with unready status: [polyaxon-main]"),
+			},
+		}
+
+		Expect(status.LogWarning("ContainersNotReady", "containers with unready status: [polyaxon-main]")).To(BeFalse())
 	})
 })

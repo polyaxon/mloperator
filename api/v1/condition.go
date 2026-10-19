@@ -98,7 +98,7 @@ func getOrUpdateOperationCondition(currentCond *OperationCondition, conditionTyp
 	newCond := NewOperationCondition(conditionType, status, reason, message)
 
 	// Do nothing if condition doesn't change
-	if currentCond != nil && currentCond.Type == newCond.Type && currentCond.Status == newCond.Status && currentCond.Reason == newCond.Reason {
+	if currentCond != nil && currentCond.Type == newCond.Type && currentCond.Status == newCond.Status && currentCond.Reason == newCond.Reason && currentCond.Message == newCond.Message {
 		// Always update final states
 		if currentCond.Type == OperationSucceeded || currentCond.Type == OperationFailed || currentCond.Type == OperationStopped {
 			return &newCond, true
