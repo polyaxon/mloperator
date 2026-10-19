@@ -53,7 +53,8 @@ func (r *ServiceReconciler) handlePastActiveDeadline(ctx context.Context, instan
 
 	activeDeadlineSeconds := instance.Termination.ActiveDeadlineSeconds
 	startTime := instance.Status.StartTime
-	if activeDeadlineSeconds == nil || startTime == nil {
+	// The deployment reconcile can mark the service done in the same pass
+	if activeDeadlineSeconds == nil || startTime == nil || instance.Status.IsDone() {
 		return nil, nil
 	}
 	currentTime := metav1.Now()
@@ -71,13 +72,9 @@ func (r *ServiceReconciler) handlePastActiveDeadline(ctx context.Context, instan
 		return nil, r.delete(ctx, instance)
 	}
 
-	if len(instance.Status.Conditions) <= 2 {
-		// Reschedule another check
-		futureTime := startTime.Add(allowedDuration)
-		requeueAfter := futureTime.Sub(currentTime.Time)
-		log.V(1).Info("Requeue reconciliation", "After", requeueAfter)
-		return &requeueAfter, nil
-	}
-
-	return nil, nil
+	// Reschedule another check
+	futureTime := startTime.Add(allowedDuration)
+	requeueAfter := futureTime.Sub(currentTime.Time)
+	log.V(1).Info("Requeue reconciliation", "After", requeueAfter)
+	return &requeueAfter, nil
 }

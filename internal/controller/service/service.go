@@ -38,11 +38,10 @@ func (r *ServiceReconciler) reconcileService(ctx context.Context, instance *apiv
 		return ctrl.Result{}, err
 	}
 
-	if duration, err := r.handlePastActiveDeadline(ctx, instance); err != nil || duration != nil {
-		if err != nil {
-			return ctrl.Result{}, err
-		}
-		return ctrl.Result{Requeue: true, RequeueAfter: *duration}, nil
+	duration, err := r.handlePastActiveDeadline(ctx, instance)
+	// The service is done once it runs past its deadline or fails in the deployment reconcile
+	if err != nil || instance.Status.IsDone() {
+		return ctrl.Result{}, err
 	}
 
 	if done, err := r.handleServiceContainerExit(ctx, instance); err != nil || done {
@@ -52,14 +51,18 @@ func (r *ServiceReconciler) reconcileService(ctx context.Context, instance *apiv
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	if duration, err := r.handleCulling(ctx, instance); err != nil || duration != nil {
-		if err != nil {
-			return ctrl.Result{}, err
-		}
-		return ctrl.Result{Requeue: true, RequeueAfter: *duration}, nil
+	cullingDuration, err := r.handleCulling(ctx, instance)
+	if err != nil {
+		return ctrl.Result{}, err
 	}
-
-	return ctrl.Result{}, nil
+	// Requeue at the deadline or the next culling check, whichever comes first
+	if cullingDuration != nil && (duration == nil || *cullingDuration < *duration) {
+		duration = cullingDuration
+	}
+	if duration == nil {
+		return ctrl.Result{}, nil
+	}
+	return ctrl.Result{RequeueAfter: *duration}, nil
 }
 
 func (r *ServiceReconciler) reconcileDeployment(ctx context.Context, instance *apiv1.Service, ports []int32) error {
