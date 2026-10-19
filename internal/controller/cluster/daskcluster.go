@@ -3,12 +3,15 @@ package cluster
 import (
 	"context"
 
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apiv1 "github.com/polyaxon/mloperator/api/v1"
 	"github.com/polyaxon/mloperator/internal/controller/cluster/daskapi"
@@ -146,6 +149,24 @@ func (r *ClusterReconciler) reconcileDaskCluster(ctx context.Context, instance *
 	return nil
 }
 
+// getDaskReplicaFailure returns the ReplicaFailure condition of the cluster's scheduler or worker Deployments.
+// The Dask operator reports Running once the scheduler Service exists, even when its Deployments can't create pods.
+func (r *ClusterReconciler) getDaskReplicaFailure(instance *apiv1.Cluster) (appsv1.DeploymentCondition, bool) {
+	deployments := &appsv1.DeploymentList{}
+	if err := r.List(context.TODO(), deployments, client.InNamespace(instance.Namespace), client.MatchingLabels{daskClusterNameLabel: instance.Name}); err != nil {
+		r.Log.Error(err, "List Dask deployments error")
+		return appsv1.DeploymentCondition{}, false
+	}
+	for _, deployment := range deployments.Items {
+		for _, cond := range deployment.Status.Conditions {
+			if cond.Type == appsv1.DeploymentReplicaFailure && cond.Status == corev1.ConditionTrue {
+				return cond, true
+			}
+		}
+	}
+	return appsv1.DeploymentCondition{}, false
+}
+
 func (r *ClusterReconciler) reconcileDaskClusterStatus(instance *apiv1.Cluster, cluster unstructured.Unstructured) (bool, error) {
 	now := metav1.Now()
 	log := r.Log
@@ -205,6 +226,13 @@ func (r *ClusterReconciler) reconcileDaskClusterStatus(instance *apiv1.Cluster, 
 		}
 
 	case daskapi.DaskClusterRunning:
+		if cond, found := r.getDaskReplicaFailure(instance); found {
+			if updated := instance.Status.LogWarning(cond.Reason, cond.Message); updated {
+				log.Info("Cluster Deployment cannot create pods", "Reason", cond.Reason, "Message", cond.Message)
+				return true, nil
+			}
+			return false, nil
+		}
 		instance.Status.LogRunning()
 		log.V(1).Info("Cluster Logging Status Running")
 		return true, nil

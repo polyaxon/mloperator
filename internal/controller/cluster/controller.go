@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -133,13 +134,13 @@ func (r *ClusterReconciler) cleanUpOperation(ctx context.Context, instance *apiv
 	return ctrl.Result{}, nil
 }
 
-// daskClusterNameLabel is set by the Dask operator on scheduler and worker pods,
-// which are owned by ReplicaSets of Dask Deployments rather than by the DaskCluster.
+// daskClusterNameLabel is set by the Dask operator on scheduler and worker Deployments and pods.
+// Worker Deployments are owned by DaskWorkerGroups and pods by ReplicaSets, rather than by the DaskCluster.
 const daskClusterNameLabel = "dask.org/cluster-name"
 
-// clusterPodName returns the Cluster name of a pod created by a RayCluster or DaskCluster,
+// clusterObjectName returns the Cluster name of a pod or Deployment created by a RayCluster or DaskCluster,
 // the cluster job has the same name as our Cluster (set in reconcile).
-func clusterPodName(object client.Object) string {
+func clusterObjectName(object client.Object) string {
 	for _, ownerRef := range object.GetOwnerReferences() {
 		if (ownerRef.APIVersion == kinds.RayAPIVersion && ownerRef.Kind == kinds.RayClusterKind) ||
 			(ownerRef.APIVersion == kinds.DaskAPIVersion && ownerRef.Kind == kinds.DaskClusterKind) {
@@ -149,9 +150,9 @@ func clusterPodName(object client.Object) string {
 	return object.GetLabels()[daskClusterNameLabel]
 }
 
-// mapClusterPodToRequest maps cluster-created pods to their Cluster: Pod -> RayCluster/DaskCluster -> Cluster
-func mapClusterPodToRequest(_ context.Context, object client.Object) []reconcile.Request {
-	name := clusterPodName(object)
+// mapClusterObjectToRequest maps cluster-created pods and Deployments to their Cluster: Pod -> RayCluster/DaskCluster -> Cluster
+func mapClusterObjectToRequest(_ context.Context, object client.Object) []reconcile.Request {
+	name := clusterObjectName(object)
 	if name == "" {
 		return nil
 	}
@@ -191,9 +192,9 @@ func (r *ClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	mapClusterToRequest := handler.EnqueueRequestsFromMapFunc(mapClusterToRequestFunc)
 
-	// Predicate for cluster pods - only trigger on meaningful changes
-	predClusterPod := predicate.NewPredicateFuncs(func(object client.Object) bool {
-		return clusterPodName(object) != ""
+	// Predicate for cluster pods and Deployments - only trigger on meaningful changes
+	predClusterObject := predicate.NewPredicateFuncs(func(object client.Object) bool {
+		return clusterObjectName(object) != ""
 	})
 
 	controllerManager := ctrl.NewControllerManagedBy(mgr).
@@ -203,8 +204,8 @@ func (r *ClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// Watch cluster-created pods for status changes (e.g., unschedulable, failed, etc.)
 	controllerManager.Watches(
 		&corev1.Pod{},
-		handler.EnqueueRequestsFromMapFunc(mapClusterPodToRequest),
-		builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}, predClusterPod),
+		handler.EnqueueRequestsFromMapFunc(mapClusterObjectToRequest),
+		builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}, predClusterObject),
 	)
 
 	// Custom predicate for cluster resources: watch spec changes, status changes, and deletions
@@ -265,6 +266,12 @@ func (r *ClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			daskCluster,
 			mapClusterToRequest,
 			builder.WithPredicates(clusterResourcePredicate),
+		)
+		// The Dask operator reports pods it can't create only on its Deployments
+		controllerManager.Watches(
+			&appsv1.Deployment{},
+			handler.EnqueueRequestsFromMapFunc(mapClusterObjectToRequest),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}, predClusterObject),
 		)
 	}
 

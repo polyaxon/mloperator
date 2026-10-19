@@ -63,7 +63,7 @@ var _ = Describe("Cluster Controller - Pod event mapping", func() {
 			newControllerRef(replicaSetKind, resourceName+"-scheduler-6c9f8d7b4"),
 		)
 
-		requests := mapClusterPodToRequest(ctx, pod)
+		requests := mapClusterObjectToRequest(ctx, pod)
 
 		Expect(requests).To(HaveLen(1))
 		Expect(requests[0].NamespacedName).To(Equal(expected))
@@ -80,7 +80,7 @@ var _ = Describe("Cluster Controller - Pod event mapping", func() {
 			newControllerRef(replicaSetKind, resourceName+"-default-worker-0f3c2a1b9e-5b7d9c8f6"),
 		)
 
-		requests := mapClusterPodToRequest(ctx, pod)
+		requests := mapClusterObjectToRequest(ctx, pod)
 
 		Expect(requests).To(HaveLen(1))
 		Expect(requests[0].NamespacedName).To(Equal(expected))
@@ -93,7 +93,7 @@ var _ = Describe("Cluster Controller - Pod event mapping", func() {
 			newControllerRef(schema.FromAPIVersionAndKind(kinds.RayAPIVersion, kinds.RayClusterKind), resourceName),
 		)
 
-		requests := mapClusterPodToRequest(ctx, pod)
+		requests := mapClusterObjectToRequest(ctx, pod)
 
 		Expect(requests).To(HaveLen(1))
 		Expect(requests[0].NamespacedName).To(Equal(expected))
@@ -106,7 +106,7 @@ var _ = Describe("Cluster Controller - Pod event mapping", func() {
 			newControllerRef(replicaSetKind, resourceName+"-5d8f7c9b4"),
 		)
 
-		Expect(mapClusterPodToRequest(ctx, pod)).To(BeEmpty())
-		Expect(mapClusterPodToRequest(ctx, newPod(resourceName, nil))).To(BeEmpty())
+		Expect(mapClusterObjectToRequest(ctx, pod)).To(BeEmpty())
+		Expect(mapClusterObjectToRequest(ctx, newPod(resourceName, nil))).To(BeEmpty())
 	})
 })
