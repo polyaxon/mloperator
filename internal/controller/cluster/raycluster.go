@@ -18,7 +18,14 @@ import (
 
 func (r *ClusterReconciler) reconcileRayClusterOp(ctx context.Context, instance *apiv1.Cluster) (ctrl.Result, error) {
 	// Reconcile the underlaying job
-	return ctrl.Result{}, r.reconcileRayCluster(ctx, instance)
+	if err := r.reconcileRayCluster(ctx, instance); err != nil {
+		return ctrl.Result{}, err
+	}
+	duration, err := r.handlePastActiveDeadline(ctx, instance)
+	if err != nil || duration == nil {
+		return ctrl.Result{}, err
+	}
+	return ctrl.Result{RequeueAfter: *duration}, nil
 }
 
 func (r *ClusterReconciler) reconcileRayCluster(ctx context.Context, instance *apiv1.Cluster) error {

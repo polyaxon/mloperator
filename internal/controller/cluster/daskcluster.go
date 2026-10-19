@@ -21,7 +21,14 @@ import (
 
 func (r *ClusterReconciler) reconcileDaskClusterOp(ctx context.Context, instance *apiv1.Cluster) (ctrl.Result, error) {
 	// Reconcile the underlying cluster
-	return ctrl.Result{}, r.reconcileDaskCluster(ctx, instance)
+	if err := r.reconcileDaskCluster(ctx, instance); err != nil {
+		return ctrl.Result{}, err
+	}
+	duration, err := r.handlePastActiveDeadline(ctx, instance)
+	if err != nil || duration == nil {
+		return ctrl.Result{}, err
+	}
+	return ctrl.Result{RequeueAfter: *duration}, nil
 }
 
 func (r *ClusterReconciler) reconcileDaskCluster(ctx context.Context, instance *apiv1.Cluster) error {

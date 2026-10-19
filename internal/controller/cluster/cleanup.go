@@ -49,14 +49,13 @@ func (r *ClusterReconciler) handleTTL(ctx context.Context, instance *apiv1.Clust
 }
 
 // handlePastActiveDeadline checks if operation has ActiveDeadlineSeconds field set and if it is exceeded.
-//
-//nolint:unused // Retained for planned active-deadline parity across operation controllers.
 func (r *ClusterReconciler) handlePastActiveDeadline(ctx context.Context, instance *apiv1.Cluster) (*time.Duration, error) {
 	log := r.Log
 
 	activeDeadlineSeconds := instance.Termination.ActiveDeadlineSeconds
 	startTime := instance.Status.StartTime
-	if activeDeadlineSeconds == nil || startTime == nil {
+	// The runtime reconcile can mark the cluster done in the same pass
+	if activeDeadlineSeconds == nil || startTime == nil || instance.Status.IsDone() {
 		return nil, nil
 	}
 	currentTime := metav1.Now()
@@ -74,15 +73,11 @@ func (r *ClusterReconciler) handlePastActiveDeadline(ctx context.Context, instan
 		return nil, r.delete(ctx, instance)
 	}
 
-	if len(instance.Status.Conditions) <= 2 {
-		// Reschedule another check
-		futureTime := startTime.Add(allowedDuration)
-		requeueAfter := futureTime.Sub(currentTime.Time)
-		log.V(1).Info("Requeue reconciliation", "After", requeueAfter)
-		return &requeueAfter, nil
-	}
-
-	return nil, nil
+	// Reschedule another check
+	futureTime := startTime.Add(allowedDuration)
+	requeueAfter := futureTime.Sub(currentTime.Time)
+	log.V(1).Info("Requeue reconciliation", "After", requeueAfter)
+	return &requeueAfter, nil
 }
 
 //nolint:unused // Retained for planned retry/backoff parity across operation controllers.
